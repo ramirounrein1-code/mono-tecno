@@ -24,7 +24,7 @@
       </div>
       <div class="footer__col">
         <h2>Contacto</h2>
-        <a :href="'https://instagram.com/' + tienda.instagram" target="_blank" rel="noopener">Instagram @{{ tienda.instagram }}</a>
+        <a :href="'https://instagram.com/' + tienda.instagram" target="_blank" rel="noopener noreferrer">Instagram @{{ tienda.instagram }}</a>
         <span>{{ tienda.zona }}</span>
         <span>{{ tienda.horarios }}</span>
       </div>
