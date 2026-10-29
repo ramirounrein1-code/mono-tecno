@@ -152,7 +152,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | **Validaciones personalizadas** | Obligatorios; longitud mínima (nombre, apellido, calle, localidad, descripción); formatos: email, DNI de 7 u 8 números, teléfono de 8 a 13 números, código postal (1714 o B1714ABC), SKU `MT-0000`, precio entero, stock entero, link https a imagen, foto JPG/PNG/WEBP de hasta 5 MB; SKU no repetido; efectivo solo con retiro; aceptar condiciones |
 | **Mensajes de error visibles** | Debajo de cada campo + resumen al enviar; el foco va al primer campo con error |
 | **LocalStorage** | Productos, carrito, pedidos, cuentas de clientes (contraseña guardada como hash PBKDF2 con sal), límite de intentos de ingreso, datos del cliente para la próxima compra y caché de la cotización (30 min). La sesión del admin va en sessionStorage |
-| **Consumo de API con Fetch** | `services/dolarService.js` → `DolarWidget.vue` (Inicio) y precio aproximado en USD en tarjetas, detalle y carrito |
+| **Consumo de API con Fetch** | `services/dolarService.js` → `DolarWidget.vue` (Inicio) y precio aproximado en USD en el detalle y el carrito |
 | **Responsive** | Mobile-first; 2 productos por fila en celular; probado en 390 px, 768 px y 1366 px |
 | **Transición Vue** | Cambio de página (`App.vue`), modal, aviso (toast), contador del carrito, pestañas del panel, campo de dirección |
 | **Extras** | Comparador de productos (en el detalle: "Compará con otras…" de la misma categoría; tabla en `/comparar` + barra flotante `CompareBar`), asistente Armá tu PC con chequeo de compatibilidad (`services/armado.js`: tipo de memoria, potencia de la fuente, socket del cooler, gráficos integrados) y modo oscuro (botón en el encabezado, sigue al sistema si no elegís) |
