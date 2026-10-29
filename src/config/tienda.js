@@ -45,9 +45,9 @@ export const TIENDA = {
 // Para cambiar la contraseña, ver la sección "Panel de administración" del README.
 export const ADMIN_HASH = '33415c48e8812d065820050035541383e92f1be1a2f35c1b08a1b5d4264f9b36'
 
-// Ingreso con Google: pegá acá el "ID de cliente" de Google Cloud (o definilo como VUE_APP_GOOGLE_CLIENT_ID en Vercel).
-// Si queda vacío, el botón "Continuar con Google" avisa que falta configurarlo. Ver README.
-export const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || ''
+// Ingreso con Google: ID de cliente OAuth del proyecto "mono-tecno-tienda" de Google Cloud.
+// Es un dato público (no es una contraseña); Google solo lo acepta desde las direcciones autorizadas.
+export const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || '492893782456-dcvklnrm5ukhks0oa260g7p191assks5.apps.googleusercontent.com'
 
 // Cuenta del dueño de la tienda: viene creada de fábrica en todos los navegadores.
 // La contraseña no está escrita: solo su hash PBKDF2 con sal (igual que cualquier cuenta).
