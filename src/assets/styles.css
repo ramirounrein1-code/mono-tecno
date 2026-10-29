@@ -15,6 +15,9 @@
   --texto-2: #5f5a63;
   --error: #b42318;
   --exito: #157347;
+  --sobre-rosa: #0b0b2a;    /* íconos y textos sobre el rosa */
+  --pie: #0b0b2a;           /* fondo del footer */
+  color-scheme: light;
 
   --radio-sm: 8px;
   --radio: 16px;
@@ -22,6 +25,28 @@
   --max: 1200px;
   --gutter: 16px;
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---- Modo oscuro: sigue al sistema salvo que el usuario elija otro con el botón ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --navy: #34337a; --navy-2: #43428f;
+    --magenta-texto: #f48fbf; --rosa: #3b2131;
+    --fondo: #121119; --papel: #1c1a25; --borde: #302d3b;
+    --texto: #eeebf2; --texto-2: #aaa4b1;
+    --error: #ff8a80; --exito: #5fd39a;
+    --sobre-rosa: #f7b9d6; --pie: #0a0910;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --navy: #34337a; --navy-2: #43428f;
+  --magenta-texto: #f48fbf; --rosa: #3b2131;
+  --fondo: #121119; --papel: #1c1a25; --borde: #302d3b;
+  --texto: #eeebf2; --texto-2: #aaa4b1;
+  --error: #ff8a80; --exito: #5fd39a;
+  --sobre-rosa: #f7b9d6; --pie: #0a0910;
+  color-scheme: dark;
 }
 
 *,
