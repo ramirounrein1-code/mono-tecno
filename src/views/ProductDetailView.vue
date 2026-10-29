@@ -41,41 +41,54 @@
 
         <p class="detalle__desc">{{ producto.descripcion }}</p>
 
-        <section v-if="producto.ideal && producto.ideal.length" class="ideal" aria-labelledby="t-ideal">
-          <h2 id="t-ideal">Ideal para</h2>
-          <ul>
-            <li v-for="i in producto.ideal" :key="i">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
-              {{ i }}
-            </li>
-          </ul>
-        </section>
-
-        <section class="ficha tarjeta" aria-labelledby="t-ficha">
-          <h2 id="t-ficha">Ficha técnica</h2>
-          <dl>
-            <div v-for="[dato, valor] in fichaCompleta" :key="dato">
-              <dt>{{ dato }}</dt>
-              <dd>{{ valor }}</dd>
+        <!-- Ficha técnica y comparador: desplegables, igual que las preguntas frecuentes -->
+        <section class="tarjeta desplegable">
+          <h2>
+            <button type="button" class="desplegable__boton" :aria-expanded="abierto.ficha ? 'true' : 'false'" aria-controls="panel-ficha" @click="abierto.ficha = !abierto.ficha">
+              Ficha técnica
+              <svg :class="['desplegable__flecha', { girada: abierto.ficha }]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            </button>
+          </h2>
+          <div id="panel-ficha" :class="['desplegable__panel', { abierto: abierto.ficha }]" role="region" :aria-hidden="abierto.ficha ? 'false' : 'true'">
+            <div class="desplegable__interior">
+              <div class="desplegable__contenido ficha">
+                <dl>
+                  <div v-for="[dato, valor] in fichaCompleta" :key="dato">
+                    <dt>{{ dato }}</dt>
+                    <dd>{{ valor }}</dd>
+                  </div>
+                </dl>
+                <p class="ficha__nota">Datos de referencia del fabricante. Pueden variar levemente según la marca y versión del producto.</p>
+              </div>
             </div>
-          </dl>
-          <p class="ficha__nota">Datos de referencia del fabricante. Pueden variar levemente según la marca y versión del producto.</p>
+          </div>
         </section>
 
-        <section v-if="opcionesComparar.length" class="comparar tarjeta" aria-labelledby="t-comparar">
-          <h2 id="t-comparar">Compará con otras {{ producto.categoria.toLowerCase() }}</h2>
-          <p class="texto-sec comparar__ayuda">Elegí hasta {{ maxComparar - 1 }} para verlas lado a lado con esta.</p>
-          <ul class="comparar__lista">
-            <li v-for="o in opcionesComparar" :key="o.id">
-              <label :class="['comparar__opcion', { activa: seleccionComparar.includes(o.id), bloqueada: !seleccionComparar.includes(o.id) && seleccionComparar.length >= maxComparar - 1 }]">
-                <input type="checkbox" :checked="seleccionComparar.includes(o.id)" :disabled="!seleccionComparar.includes(o.id) && seleccionComparar.length >= maxComparar - 1" @change="alternarOpcion(o)">
-                <img :src="fotoDe(o)" alt="" width="48" height="36">
-                <span class="comparar__nombre">{{ o.nombre }}</span>
-                <span class="comparar__precio">{{ pesos(o.precio) }}</span>
-              </label>
-            </li>
-          </ul>
-          <router-link v-if="seleccionComparar.length" :to="{ name: 'comparar' }" class="btn btn--primario comparar__ir">Comparar {{ seleccionComparar.length + 1 }} {{ producto.categoria.toLowerCase() }}</router-link>
+        <section v-if="opcionesComparar.length" class="tarjeta desplegable">
+          <h2>
+            <button type="button" class="desplegable__boton" :aria-expanded="abierto.comparar ? 'true' : 'false'" aria-controls="panel-comparar" @click="abierto.comparar = !abierto.comparar">
+              <span>Compará con otras {{ producto.categoria.toLowerCase() }}<span v-if="seleccionComparar.length" class="desplegable__cuenta"> · {{ seleccionComparar.length }} elegida{{ seleccionComparar.length === 1 ? '' : 's' }}</span></span>
+              <svg :class="['desplegable__flecha', { girada: abierto.comparar }]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            </button>
+          </h2>
+          <div id="panel-comparar" :class="['desplegable__panel', { abierto: abierto.comparar }]" role="region" :aria-hidden="abierto.comparar ? 'false' : 'true'">
+            <div class="desplegable__interior">
+              <div class="desplegable__contenido comparar">
+                <p class="texto-sec comparar__ayuda">Elegí hasta {{ maxComparar - 1 }} para verlas lado a lado con esta.</p>
+                <ul class="comparar__lista">
+                  <li v-for="o in opcionesComparar" :key="o.id">
+                    <label :class="['comparar__opcion', { activa: seleccionComparar.includes(o.id), bloqueada: !seleccionComparar.includes(o.id) && seleccionComparar.length >= maxComparar - 1 }]">
+                      <input type="checkbox" :tabindex="abierto.comparar ? 0 : -1" :checked="seleccionComparar.includes(o.id)" :disabled="!seleccionComparar.includes(o.id) && seleccionComparar.length >= maxComparar - 1" @change="alternarOpcion(o)">
+                      <img :src="fotoDe(o)" alt="" width="48" height="36">
+                      <span class="comparar__nombre">{{ o.nombre }}</span>
+                      <span class="comparar__precio">{{ pesos(o.precio) }}</span>
+                    </label>
+                  </li>
+                </ul>
+                <router-link v-if="seleccionComparar.length" :to="{ name: 'comparar' }" :tabindex="abierto.comparar ? 0 : -1" class="btn btn--primario comparar__ir">Comparar {{ seleccionComparar.length + 1 }} {{ producto.categoria.toLowerCase() }}</router-link>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </article>
@@ -118,6 +131,7 @@ export default {
       cantidad: 1,
       imagenRota: false,
       mostrarBarra: false,
+      abierto: { ficha: false, comparar: false },
       observador: null
     }
   },
@@ -162,6 +176,7 @@ export default {
   },
   created () {
     this.producto = obtenerProducto(this.id)
+    if (this.producto && this.seleccionComparar.length) this.abierto.comparar = true
     if (this.producto) {
       const p = this.producto
       aplicarSeo({
@@ -263,13 +278,21 @@ export default {
 .detalle__agregar .btn { flex: 1 1 200px; }
 .detalle__aviso { margin: 0; font-size: 14px; }
 .detalle__desc { margin: 0; font-size: 17px; line-height: 1.6; }
-.ideal h2,
-.ficha h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-.ideal ul { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.ideal li { display: flex; align-items: center; gap: 10px; font-size: 15px; }
-.ideal svg { flex: none; width: 24px; height: 24px; padding: 4px; border-radius: 999px; background: #e7f4ec; color: var(--exito); }
-.ficha { padding: 18px 18px 14px; }
-.ficha dl { margin: 12px 0 0; }
+.desplegable { overflow: hidden; }
+.desplegable h2 { margin: 0; font-size: inherit; }
+.desplegable__boton { width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; border: 0; background: transparent; font: inherit; font-size: 17px; font-weight: 600; line-height: 1.35; color: var(--texto); text-align: left; cursor: pointer; }
+.desplegable__boton:focus { outline: none; }
+.desplegable__boton:focus-visible { outline: 2px solid var(--magenta); outline-offset: -4px; border-radius: 14px; }
+.desplegable__cuenta { font-weight: 500; color: var(--magenta-texto); }
+.desplegable__flecha { flex: none; transition: transform 0.2s ease; color: var(--texto-2); }
+.desplegable__flecha.girada { transform: rotate(180deg); }
+.desplegable__panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+.desplegable__panel.abierto { grid-template-rows: 1fr; }
+.desplegable__interior { overflow: hidden; }
+.desplegable__contenido { padding: 0 18px 16px; opacity: 0; transition: opacity 0.2s ease; }
+.desplegable__panel.abierto .desplegable__contenido { opacity: 1; transition-delay: 0.08s; }
+@media (prefers-reduced-motion: reduce) { .desplegable__panel, .desplegable__contenido, .desplegable__flecha { transition: none; } }
+.ficha dl { margin: 0; }
 .ficha dl div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--borde); font-size: 14px; }
 .ficha dt { color: var(--texto-2); }
 .ficha dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
@@ -285,7 +308,7 @@ export default {
 @media (min-width: 900px) {
   .detalle { padding-top: 32px; }
   .detalle__grid { grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: start; }
-  .detalle__imagen { position: sticky; top: 92px; align-self: start; }
+  .detalle__imagen { align-self: start; }
 }
 
 /* Barra fija para el pulgar (solo celular): aparece cuando el botón principal sale de la pantalla. */
@@ -310,8 +333,7 @@ export default {
 .barra-enter-active, .barra-leave-active { transition: transform 0.2s ease, opacity 0.2s ease; }
 .barra-enter-from, .barra-leave-to { transform: translateY(100%); opacity: 0; }
 @media (min-width: 860px) { .barra-accion { display: none; } }
-.comparar { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
-.comparar h2 { font-size: 18px; margin: 0; }
+.comparar { display: flex; flex-direction: column; gap: 10px; }
 .comparar__ayuda { margin: 0; font-size: 14px; }
 .comparar__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .comparar__opcion { display: grid; grid-template-columns: 20px 48px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 52px; padding: 6px 10px; border: 1.5px solid transparent; border-radius: 12px; background: var(--fondo); cursor: pointer; }
