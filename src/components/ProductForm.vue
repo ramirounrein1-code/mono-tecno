@@ -106,13 +106,6 @@
         <p v-if="errores.fichaTexto" id="e-ficha" class="campo__error">{{ errores.fichaTexto }}</p>
       </div>
 
-      <!-- Ideal para -->
-      <div class="campo campo--ancho">
-        <label for="f-ideal">Ideal para <span class="campo__ayuda">Opcional · un uso por línea (máximo 5)</span></label>
-        <textarea id="f-ideal" v-model="form.idealTexto" rows="3" placeholder="Gaming en 1080p&#10;Edición de video" :aria-invalid="!!errores.idealTexto" aria-describedby="e-ideal" @blur="validarCampo('idealTexto')"></textarea>
-        <p v-if="errores.idealTexto" id="e-ideal" class="campo__error">{{ errores.idealTexto }}</p>
-      </div>
-
       <!-- Destacado -->
       <label class="check campo--ancho">
         <input v-model="form.destacado" type="checkbox">
