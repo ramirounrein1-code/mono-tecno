@@ -10,6 +10,15 @@
       <button type="button" class="btn btn--fantasma btn--chico cuenta__salir" @click="salir">Cerrar sesión</button>
     </header>
 
+    <!-- Solo para la cuenta del dueño: acceso al panel (igual pide la contraseña del panel) -->
+    <router-link v-if="duenio" to="/admin" class="tarjeta cuenta__panel">
+      <span class="cuenta__panel-icono" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></svg>
+      </span>
+      <span><strong>Panel de administración</strong><span class="texto-sec">Productos, stock y pedidos de la tienda</span></span>
+      <span aria-hidden="true" class="cuenta__panel-flecha">→</span>
+    </router-link>
+
     <div class="cuenta__grid">
       <!-- Mis pedidos -->
       <section class="tarjeta bloque" aria-labelledby="t-pedidos">
@@ -62,7 +71,7 @@
 </template>
 
 <script>
-import { sesion, cerrarSesion, actualizarPerfil, pedidosDelUsuario } from '../services/cuentas'
+import { sesion, cerrarSesion, actualizarPerfil, pedidosDelUsuario, esDuenio } from '../services/cuentas'
 import { formatearPesos } from '../services/dolarService'
 
 export default {
@@ -79,6 +88,9 @@ export default {
   computed: {
     usuario () {
       return sesion.usuario || { nombre: '', apellido: '', email: '' }
+    },
+    duenio () {
+      return esDuenio(this.usuario)
     },
     iniciales () {
       return ((this.usuario.nombre[0] || '') + (this.usuario.apellido[0] || '')).toUpperCase()
@@ -130,6 +142,11 @@ export default {
 .cuenta__cabecera p { margin: 4px 0 0; overflow-wrap: anywhere; }
 .cuenta__avatar { flex: none; width: 60px; height: 60px; border-radius: 999px; background: var(--magenta); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; }
 .cuenta__salir { margin-left: auto; }
+.cuenta__panel { display: flex; align-items: center; gap: 14px; padding: 16px 18px; color: var(--texto); text-decoration: none !important; border-color: var(--magenta); }
+.cuenta__panel > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.cuenta__panel .texto-sec { font-size: 14px; }
+.cuenta__panel-icono { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--rosa); display: flex; align-items: center; justify-content: center; color: var(--navy); }
+.cuenta__panel-flecha { font-size: 20px; color: var(--magenta-texto); }
 .cuenta__avatar--foto { object-fit: cover; background: var(--rosa); }
 .cuenta__google { font-size: 13px; }
 .cuenta__cantidad { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; margin-left: 6px; border-radius: 999px; background: var(--rosa); font-size: 13px; font-weight: 600; vertical-align: middle; }
