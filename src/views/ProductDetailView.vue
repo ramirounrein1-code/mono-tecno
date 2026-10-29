@@ -39,6 +39,11 @@
           <a v-else class="btn btn--fantasma" href="https://instagram.com/mono.tecno" target="_blank" rel="noopener noreferrer">Avisame cuando vuelva (Instagram)</a>
         </div>
 
+        <button type="button" :class="['detalle__comparar', { activo: comparando }]" :aria-pressed="comparando ? 'true' : 'false'" @click="comparar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7" height="16" rx="1.5" /><rect x="14" y="4" width="7" height="16" rx="1.5" /></svg>
+          {{ comparando ? 'En la comparación' : 'Agregar a comparar' }}
+        </button>
+
         <p class="detalle__desc">{{ producto.descripcion }}</p>
 
         <section v-if="producto.ideal && producto.ideal.length" class="ideal" aria-labelledby="t-ideal">
@@ -79,6 +84,7 @@
 
 <script>
 import CategoryIcon from '../components/CategoryIcon.vue'
+import { alternarComparacion, estaEnComparacion } from '../services/comparar'
 import QuantityStepper from '../components/QuantityStepper.vue'
 import { precioConDescuento } from '../services/precios'
 import { obtenerProducto } from '../services/productosService'
@@ -104,6 +110,7 @@ export default {
     }
   },
   computed: {
+    comparando () { return !!this.producto && estaEnComparacion(this.producto.id) },
     foto () {
       return resolverImagen(this.producto.imagen)
     },
@@ -156,6 +163,11 @@ export default {
       this.observador = new IntersectionObserver(([e]) => { this.mostrarBarra = !e.isIntersecting }, { rootMargin: '0px 0px -140px 0px' })
       this.observador.observe(el)
     },
+    comparar () {
+      const r = alternarComparacion(this.producto.id)
+      if (r === 'lleno') this.$emit('notificar', { mensaje: 'Ya elegiste 3 productos. Quitá uno para sumar este.', tipo: 'info', accion: { texto: 'Ver comparación', to: '/comparar' } })
+      else if (r === 'agregado') this.$emit('notificar', { mensaje: 'Sumado a la comparación.', accion: { texto: 'Comparar', to: '/comparar' } })
+    },
     agregarAlCarrito () {
       const n = agregar(this.producto, this.cantidad)
       if (n) {
@@ -181,7 +193,7 @@ export default {
   justify-content: center;
   overflow: hidden;
   background: #fff;
-  color: var(--navy);
+  color: #0b0b2a;
 }
 .detalle__imagen img { width: 100%; height: 100%; object-fit: cover; }
 .detalle__imagen figcaption {
@@ -264,4 +276,7 @@ export default {
 .barra-enter-active, .barra-leave-active { transition: transform 0.2s ease, opacity 0.2s ease; }
 .barra-enter-from, .barra-leave-to { transform: translateY(100%); opacity: 0; }
 @media (min-width: 860px) { .barra-accion { display: none; } }
+.detalle__comparar { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--borde); border-radius: 12px; background: var(--papel); color: var(--texto); font: inherit; font-size: 14px; cursor: pointer; }
+.detalle__comparar:hover { border-color: var(--texto-2); }
+.detalle__comparar.activo { border-color: var(--magenta); color: var(--magenta-texto); }
 </style>

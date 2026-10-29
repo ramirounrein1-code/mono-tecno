@@ -11,14 +11,20 @@
       v-model:condicion="condicion"
       v-model:orden="orden"
       v-model:solo-stock="soloStock"
+      v-model:marca="marca"
+      v-model:precio-min="precioMin"
+      v-model:precio-max="precioMax"
       :categorias="categorias"
       :condiciones="condiciones"
+      :marcas="marcas"
     />
 
     <div v-if="hayFiltros" class="listado__filtros">
       <span v-if="busqueda" class="chip">“{{ busqueda }}”</span>
       <span v-if="categoria" class="chip">{{ categoria }}</span>
       <span v-if="condicion" class="chip">{{ condicion }}</span>
+      <span v-if="marca" class="chip">{{ marca }}</span>
+      <span v-if="precioMin != null || precioMax != null" class="chip">{{ textoPrecio }}</span>
       <span v-if="soloStock" class="chip">Con stock</span>
       <button type="button" class="listado__limpiar" @click="limpiarFiltros">Limpiar filtros</button>
     </div>
@@ -31,6 +37,7 @@
         :producto="p"
         :dolar="dolar"
         @agregar="agregarAlCarrito"
+        @comparar="comparar"
       />
     </transition-group>
 
@@ -48,6 +55,7 @@ import ProductCard from '../components/ProductCard.vue'
 import { obtenerProductos } from '../services/productosService'
 import { obtenerCotizaciones } from '../services/dolarService'
 import { agregar } from '../services/carrito'
+import { alternarComparacion, comparacion, MAX_COMPARAR } from '../services/comparar'
 import { CATEGORIAS, CONDICIONES } from '../data/productosIniciales'
 
 // Quita tildes y pasa a minúsculas para que la búsqueda sea más tolerante.
@@ -67,6 +75,9 @@ export default {
       condicion: '',
       orden: 'precio-desc',
       soloStock: false,
+      marca: '',
+      precioMin: null,
+      precioMax: null,
       dolar: null
     }
   },
@@ -79,7 +90,10 @@ export default {
         return palabras.every((w) => texto.includes(w)) &&
           (!this.categoria || p.categoria === this.categoria) &&
           (!this.condicion || p.condicion === this.condicion) &&
-          (!this.soloStock || p.stock > 0)
+          (!this.soloStock || p.stock > 0) &&
+          (!this.marca || p.marca === this.marca) &&
+          (this.precioMin == null || p.precio >= this.precioMin) &&
+          (this.precioMax == null || p.precio <= this.precioMax)
       })
       const comparadores = {
         recientes: (a, b) => b.fechaAlta.localeCompare(a.fechaAlta),
@@ -91,8 +105,19 @@ export default {
       // Los productos sin stock van al final.
       return [...lista].sort((a, b) => (b.stock > 0) - (a.stock > 0) || comparadores[this.orden](a, b))
     },
+    // Marcas disponibles (sale de los productos cargados; si se elige una categoría, solo las de esa categoría).
+    marcas () {
+      const lista = this.productos.filter((p) => !this.categoria || p.categoria === this.categoria).map((p) => p.marca)
+      return [...new Set(lista)].sort((a, b) => a.localeCompare(b, 'es'))
+    },
+    textoPrecio () {
+      const f = (v) => '$ ' + v.toLocaleString('es-AR')
+      if (this.precioMin != null && this.precioMax != null) return `${f(this.precioMin)} a ${f(this.precioMax)}`
+      if (this.precioMax != null) return `Hasta ${f(this.precioMax)}`
+      return `Desde ${f(this.precioMin)}`
+    },
     hayFiltros () {
-      return !!(this.busqueda || this.categoria || this.condicion || this.soloStock)
+      return !!(this.busqueda || this.categoria || this.condicion || this.soloStock || this.marca || this.precioMin != null || this.precioMax != null)
     },
     textoResultados () {
       const n = this.productosFiltrados.length
@@ -102,7 +127,14 @@ export default {
   watch: {
     // Mantiene búsqueda y categoría en la URL para poder compartir el link.
     busqueda () { this.actualizarUrl() },
-    categoria () { this.actualizarUrl() },
+    categoria () {
+      // Si la marca elegida no existe en la nueva categoría, se limpia.
+      if (this.marca && !this.marcas.includes(this.marca)) this.marca = ''
+      this.actualizarUrl()
+    },
+    marca () { this.actualizarUrl() },
+    precioMin () { this.actualizarUrl() },
+    precioMax () { this.actualizarUrl() },
     // Si se busca desde el encabezado estando en esta página, se toma la nueva búsqueda.
     '$route.query' (q) {
       if ((q.q || '') !== this.busqueda) this.busqueda = q.q || ''
@@ -112,9 +144,12 @@ export default {
   // created: leemos los productos de LocalStorage y los filtros que vengan en la URL.
   created () {
     this.productos = obtenerProductos()
-    const { q, categoria } = this.$route.query
+    const { q, categoria, marca, desde, hasta } = this.$route.query
     if (q) this.busqueda = q
     if (categoria && CATEGORIAS.includes(categoria)) this.categoria = categoria
+    if (marca) this.marca = String(marca).slice(0, 40)
+    if (/^\d{1,9}$/.test(desde || '')) this.precioMin = Number(desde)
+    if (/^\d{1,9}$/.test(hasta || '')) this.precioMax = Number(hasta)
   },
   // mounted: con la vista en pantalla, pedimos la cotización para mostrar el precio aproximado en dólares.
   async mounted () {
@@ -131,8 +166,12 @@ export default {
       const query = {}
       if (this.busqueda.trim()) query.q = this.busqueda.trim()
       if (this.categoria) query.categoria = this.categoria
+      if (this.marca) query.marca = this.marca
+      if (this.precioMin != null) query.desde = String(this.precioMin)
+      if (this.precioMax != null) query.hasta = String(this.precioMax)
       const actual = this.$route.query
-      if ((actual.q || '') !== (query.q || '') || (actual.categoria || '') !== (query.categoria || '')) {
+      const claves = ['q', 'categoria', 'marca', 'desde', 'hasta']
+      if (claves.some((k) => (actual[k] || '') !== (query[k] || ''))) {
         this.$router.replace({ query })
       }
     },
@@ -141,6 +180,16 @@ export default {
       this.categoria = ''
       this.condicion = ''
       this.soloStock = false
+      this.marca = ''
+      this.precioMin = null
+      this.precioMax = null
+    },
+    // Comparar: agrega o saca el producto de la comparación y avisa.
+    comparar (producto) {
+      const r = alternarComparacion(producto.id)
+      const n = comparacion.ids.length
+      if (r === 'lleno') this.$emit('notificar', { mensaje: `Podés comparar hasta ${MAX_COMPARAR} productos. Sacá uno para sumar otro.`, tipo: 'info', accion: { texto: 'Ver comparación', to: '/comparar' } })
+      else if (r === 'agregado') this.$emit('notificar', { mensaje: n < 2 ? `Sumaste “${producto.nombre}”. Elegí otro para comparar.` : `Sumaste “${producto.nombre}” a la comparación.`, tipo: 'info', accion: n >= 2 ? { texto: 'Comparar', to: '/comparar' } : null })
     },
     agregarAlCarrito (producto) {
       if (agregar(producto)) this.$emit('notificar', { mensaje: `Agregaste “${producto.nombre}” al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })

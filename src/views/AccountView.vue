@@ -145,7 +145,7 @@ export default {
 .cuenta__panel { display: flex; align-items: center; gap: 14px; padding: 16px 18px; color: var(--texto); text-decoration: none !important; border-color: var(--magenta); }
 .cuenta__panel > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .cuenta__panel .texto-sec { font-size: 14px; }
-.cuenta__panel-icono { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--rosa); display: flex; align-items: center; justify-content: center; color: var(--navy); }
+.cuenta__panel-icono { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--rosa); display: flex; align-items: center; justify-content: center; color: var(--sobre-rosa); }
 .cuenta__panel-flecha { font-size: 20px; color: var(--magenta-texto); }
 .cuenta__avatar--foto { object-fit: cover; background: var(--rosa); }
 .cuenta__google { font-size: 13px; }

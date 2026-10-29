@@ -456,7 +456,7 @@ export default {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .opcion input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--magenta); }
-.opcion--activa { border-color: var(--navy); background: #faf6f8; box-shadow: inset 0 0 0 1px var(--navy); }
+.opcion--activa { border-color: var(--navy); background: var(--papel); box-shadow: inset 0 0 0 1px var(--navy); }
 .opcion--off { opacity: 0.55; cursor: not-allowed; }
 .opcion__texto { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
 .opcion__texto span { font-size: 13px; color: var(--texto-2); }

@@ -11,7 +11,7 @@
               Ver placas de video
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </router-link>
-            <router-link to="/productos" class="btn btn--fantasma">Todo el catálogo</router-link>
+            <router-link to="/arma-tu-pc" class="btn btn--fantasma">Armá tu PC</router-link>
           </div>
         </div>
         <div class="hero__logo">
@@ -47,7 +47,7 @@
           <router-link to="/productos" class="seccion__mas">Ver todo el catálogo →</router-link>
         </div>
         <transition-group tag="div" name="grilla" class="grilla" appear>
-          <ProductCard v-for="p in destacados" :key="p.id" :producto="p" :dolar="dolar" @agregar="agregarAlCarrito" />
+          <ProductCard v-for="p in destacados" :key="p.id" :producto="p" :dolar="dolar" @agregar="agregarAlCarrito" @comparar="comparar" />
         </transition-group>
       </div>
     </section>
@@ -89,6 +89,7 @@ import DolarWidget from '../components/DolarWidget.vue'
 import LogoParticles from '../components/LogoParticles.vue'
 import { obtenerProductos } from '../services/productosService'
 import { agregar } from '../services/carrito'
+import { alternarComparacion, comparacion, MAX_COMPARAR } from '../services/comparar'
 import { CATEGORIAS } from '../data/productosIniciales'
 import logoCirculo from '../assets/logo-circulo.png'
 
@@ -128,6 +129,13 @@ export default {
     this.productos = obtenerProductos()
   },
   methods: {
+    // Comparar: agrega o saca el producto de la comparación y avisa.
+    comparar (producto) {
+      const r = alternarComparacion(producto.id)
+      const n = comparacion.ids.length
+      if (r === 'lleno') this.$emit('notificar', { mensaje: `Podés comparar hasta ${MAX_COMPARAR} productos. Sacá uno para sumar otro.`, tipo: 'info', accion: { texto: 'Ver comparación', to: '/comparar' } })
+      else if (r === 'agregado') this.$emit('notificar', { mensaje: n < 2 ? `Sumaste “${producto.nombre}”. Elegí otro para comparar.` : `Sumaste “${producto.nombre}” a la comparación.`, tipo: 'info', accion: n >= 2 ? { texto: 'Comparar', to: '/comparar' } : null })
+    },
     agregarAlCarrito (producto) {
       if (agregar(producto)) this.$emit('notificar', { mensaje: `Agregaste “${producto.nombre}” al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })
     }
@@ -167,7 +175,7 @@ export default {
   margin-bottom: 10px;
   border-radius: 12px;
   background: var(--rosa);
-  color: var(--navy);
+  color: var(--sobre-rosa);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,7 +202,7 @@ export default {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--navy);
+  color: #0b0b2a;
 }
 .banda h2 { margin-top: 12px; font-size: clamp(32px, 6vw, 58px); line-height: 1; text-wrap: balance; }
 .controles { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -203,7 +211,7 @@ export default {
   gap: 14px;
   padding: 16px;
   border-radius: var(--radio);
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--papel);
   color: var(--texto);
 }
 .controles__check {

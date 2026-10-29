@@ -401,7 +401,7 @@ export default {
 .estado--pendiente-de-pago { color: #9a5b00; background: #fff6e5 !important; }
 .estado--pagado,
 .estado--entregado { color: var(--exito); background: #e7f4ec !important; }
-.estado--enviado { color: var(--navy); background: var(--rosa) !important; }
+.estado--enviado { color: var(--sobre-rosa); background: var(--rosa) !important; }
 .estado--cancelado { color: var(--error); background: #fdecea !important; }
 .admin__acciones { display: flex; flex-wrap: wrap; gap: 10px; }
 .pedido__items { margin: 0; padding-left: 18px; font-size: 14px; color: var(--texto-2); }

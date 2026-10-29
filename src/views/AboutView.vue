@@ -197,7 +197,7 @@ export default {
 /* Qué hacemos */
 .servicios { display: grid; gap: 12px; }
 .servicio { padding: 22px; display: flex; flex-direction: column; gap: 10px; }
-.servicio__icono { width: 48px; height: 48px; border-radius: 14px; background: var(--rosa); color: var(--navy); display: flex; align-items: center; justify-content: center; }
+.servicio__icono { width: 48px; height: 48px; border-radius: 14px; background: var(--rosa); color: var(--sobre-rosa); display: flex; align-items: center; justify-content: center; }
 .servicio h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
 .servicio p { margin: 0; color: var(--texto-2); }
 
@@ -206,7 +206,7 @@ export default {
 .nos__banda h2 { font-size: clamp(28px, 4.5vw, 44px); color: #fff; max-width: 720px; margin: 8px 0 28px; text-wrap: balance; }
 .eyebrow--claro { color: #fff; opacity: 0.9; }
 .pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.paso { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border-radius: var(--radio); background: #fff; color: var(--texto); }
+.paso { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border-radius: var(--radio); background: var(--papel); color: var(--texto); }
 .paso__num { flex: none; width: 36px; height: 36px; border-radius: 999px; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .paso h3 { font-size: 17px; font-weight: 600; }
 .paso p { margin: 4px 0 0; font-size: 14px; color: var(--texto-2); }
