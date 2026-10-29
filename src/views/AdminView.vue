@@ -57,17 +57,27 @@
                     <img :src="foto(p)" alt="" width="64" height="48">
                     <div>
                       <router-link :to="{ name: 'detalle', params: { id: p.id } }" class="tabla__nombre">{{ p.nombre }}</router-link>
-                      <span class="tabla__sku">{{ p.sku }}<template v-if="p.destacado"> · Destacado</template></span>
+                      <span class="tabla__sku">{{ p.sku }}</span>
                     </div>
                   </div>
                 </td>
                 <td>{{ p.categoria }}</td>
                 <td>{{ p.condicion }}</td>
                 <td class="num">{{ pesos(p.precio) }}</td>
-                <td class="num"><span :class="['stock', { 'stock--cero': p.stock === 0 }]">{{ p.stock }}</span></td>
+                <td class="num">
+                  <div class="stock-rapido">
+                    <button type="button" :aria-label="'Restar una unidad de ' + p.nombre" :disabled="p.stock === 0" @click="cambiarStock(p, -1)">−</button>
+                    <span :class="['stock', { 'stock--cero': p.stock === 0 }]" aria-live="polite">{{ p.stock }}</span>
+                    <button type="button" :aria-label="'Sumar una unidad de ' + p.nombre" @click="cambiarStock(p, 1)">+</button>
+                  </div>
+                </td>
                 <td>
                   <div class="tabla__acciones">
+                    <button type="button" :class="['tabla__estrella', { activa: p.destacado }]" :aria-pressed="p.destacado ? 'true' : 'false'" :aria-label="(p.destacado ? 'Quitar de destacados: ' : 'Destacar en el inicio: ') + p.nombre" :title="p.destacado ? 'Destacado en el inicio' : 'Destacar en el inicio'" @click="cambiarDestacado(p)">
+                      <svg width="18" height="18" viewBox="0 0 24 24" :fill="p.destacado ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z" /></svg>
+                    </button>
                     <router-link :to="{ name: 'edicion', params: { id: p.id } }" class="btn btn--fantasma btn--chico">Editar</router-link>
+                    <router-link :to="{ name: 'alta', query: { desde: p.id } }" class="btn btn--fantasma btn--chico" :title="'Crear un producto nuevo a partir de ' + p.nombre">Duplicar</router-link>
                     <button type="button" class="btn btn--fantasma btn--chico tabla__borrar" @click="aEliminar = p">Eliminar</button>
                   </div>
                 </td>
@@ -90,7 +100,7 @@
           </button>
         </div>
         <p v-if="!pedidosFiltrados.length" class="texto-sec panel__vacio">{{ filtroPedidos === 'activos' ? 'No hay pedidos pendientes. Los entregados y cancelados están en "Finalizados".' : 'No hay pedidos en esta lista.' }}</p>
-        <transition-group tag="ul" name="fila" class="pedidos">
+        <transition-group :key="filtroPedidos" tag="ul" name="pedido-anim" class="pedidos">
           <li v-for="ped in pedidosFiltrados" :key="ped.numero" class="tarjeta pedido">
             <div class="pedido__cabecera">
               <strong>#{{ ped.numero }}</strong>
@@ -148,7 +158,7 @@
 
 <script>
 import ConfirmModal from '../components/ConfirmModal.vue'
-import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, actualizarEstadoPedido, eliminarPedido, ESTADOS_PEDIDO, ESTADOS_FINALIZADOS } from '../services/productosService'
+import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, actualizarEstadoPedido, eliminarPedido, ajustarStock, alternarDestacado, ESTADOS_PEDIDO, ESTADOS_FINALIZADOS } from '../services/productosService'
 import { cerrarSesion } from '../services/auth'
 import { formatearPesos } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
@@ -242,6 +252,14 @@ export default {
       if (antes === 'Cancelado' && estado !== 'Cancelado') extra += ' Se volvió a descontar el stock.'
       this.$emit('notificar', { mensaje: `Pedido #${ped.numero}: ${estado}.${extra}`, tipo: 'info' })
     },
+    // Atajos de la tabla: se guardan al instante, sin entrar a "Editar".
+    cambiarStock (p, cambio) {
+      p.stock = ajustarStock(p.id, cambio)
+    },
+    cambiarDestacado (p) {
+      p.destacado = alternarDestacado(p.id)
+      this.$emit('notificar', { mensaje: p.destacado ? `“${p.nombre}” se muestra en Destacados del inicio.` : `“${p.nombre}” ya no está en Destacados.`, tipo: 'info' })
+    },
     borrarPedido () {
       const n = this.pedidoAEliminar.numero
       eliminarPedido(n)
@@ -326,7 +344,7 @@ export default {
 }
 
 .tabla-caja { position: relative; max-width: 100%; overflow-x: auto; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--papel); }
-.tabla { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; }
+.tabla { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px; }
 .tabla th {
   text-align: left;
   font-size: 12px;
@@ -345,6 +363,18 @@ export default {
 .tabla__sku { display: block; font-size: 12px; color: var(--texto-2); }
 .stock { display: inline-block; min-width: 28px; padding: 2px 8px; border-radius: 999px; background: #e7f4ec; color: var(--exito); font-weight: 600; text-align: center; }
 .stock--cero { background: #fdecea; color: var(--error); }
+.stock-rapido { display: inline-flex; align-items: center; gap: 6px; }
+.stock-rapido button { width: 32px; height: 32px; border: 1px solid var(--borde); border-radius: 8px; background: var(--papel); font: inherit; font-size: 18px; line-height: 1; color: var(--texto); cursor: pointer; }
+.stock-rapido button:hover:not(:disabled) { border-color: var(--navy); }
+.stock-rapido button:disabled { color: #c9c3c5; cursor: not-allowed; }
+.tabla__estrella { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--borde); border-radius: 10px; background: var(--papel); color: #b9b3b5; cursor: pointer; }
+.tabla__estrella.activa { color: #e0a100; border-color: #f1d27a; background: #fff8e1; }
+/* Pedidos: al pasar a Finalizados (o borrarse) la tarjeta se desvanece y las demás suben suave */
+.pedido-anim-move { transition: transform 0.35s ease; }
+.pedido-anim-enter-active, .pedido-anim-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.pedido-anim-enter-from { opacity: 0; transform: translateY(8px); }
+.pedido-anim-leave-to { opacity: 0; transform: scale(0.97); }
+.pedido-anim-leave-active { position: absolute; left: 0; right: 0; }
 .tabla__acciones { display: flex; gap: 6px; justify-content: flex-end; }
 .tabla__borrar { color: var(--error); }
 

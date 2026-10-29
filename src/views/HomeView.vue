@@ -111,8 +111,12 @@ export default {
   },
   computed: {
     destacados () {
-      // Hasta 4, con stock primero, para que la fila quede completa.
-      return this.productos.filter((p) => p.destacado).sort((a, b) => (b.stock > 0) - (a.stock > 0)).slice(0, 4)
+      // Solo productos con stock: primero los marcados como destacados y, si alguno se agotó,
+      // su lugar lo ocupa automáticamente otro producto con stock (el de mayor precio).
+      const conStock = this.productos.filter((p) => p.stock > 0)
+      const marcados = conStock.filter((p) => p.destacado)
+      const reemplazos = conStock.filter((p) => !p.destacado).sort((a, b) => b.precio - a.precio)
+      return [...marcados, ...reemplazos].slice(0, 4)
     },
     categoriasConStock () {
       return CATEGORIAS

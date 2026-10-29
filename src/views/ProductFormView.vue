@@ -10,8 +10,8 @@
     <template v-else>
       <header class="form-vista__cabecera">
         <span class="eyebrow">Panel de administración</span>
-        <h1 class="titulo-seccion">{{ esEdicion ? 'Editar producto' : 'Agregar producto' }}</h1>
-        <p class="texto-sec">Los campos con * son obligatorios. Los cambios se guardan en este navegador (LocalStorage).</p>
+        <h1 class="titulo-seccion">{{ esEdicion ? 'Editar producto' : producto ? 'Duplicar producto' : 'Agregar producto' }}</h1>
+        <p class="texto-sec">Los campos con * son obligatorios.</p>
       </header>
 
       <!-- El mismo componente sirve para alta y edición -->
@@ -28,7 +28,7 @@
 
 <script>
 import ProductForm from '../components/ProductForm.vue'
-import { obtenerProducto, crearProducto, actualizarProducto } from '../services/productosService'
+import { obtenerProducto, crearProducto, actualizarProducto, siguienteSku } from '../services/productosService'
 
 export default {
   name: 'ProductFormView',
@@ -46,7 +46,16 @@ export default {
     }
   },
   created () {
-    if (this.esEdicion) this.producto = obtenerProducto(this.id)
+    if (this.esEdicion) {
+      this.producto = obtenerProducto(this.id)
+      return
+    }
+    // "Duplicar": el alta arranca con los datos de otro producto (nombre marcado como copia, SKU nuevo).
+    const base = this.$route.query.desde ? obtenerProducto(String(this.$route.query.desde)) : null
+    if (base) {
+      const { id, fechaAlta, ...resto } = base
+      this.producto = { ...resto, nombre: `${base.nombre} (copia)`.slice(0, 80), sku: siguienteSku(), stock: 1, destacado: false }
+    }
   },
   methods: {
     guardar (datos) {
