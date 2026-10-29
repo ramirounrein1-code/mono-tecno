@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
+import { aplicarSeo, DESCRIPCIONES } from '../services/seo'
 import HomeView from '../views/HomeView.vue'
 import { estaLogueado, registrarActividad } from '../services/auth'
 import { estaLogueadoCliente } from '../services/cuentas'
@@ -53,18 +54,20 @@ router.beforeEach(async (to) => {
 })
 
 // Actualiza el título de la pestaña en cada navegación.
+// Título, descripción y etiquetas para Google en cada navegación.
+// (El detalle de producto las completa él mismo con los datos del producto.)
 router.afterEach((to) => {
-  document.title = `${to.meta.titulo || 'mono.tecno'} · mono.tecno`
   registrarActividad()
-  // Las páginas privadas (panel, cuenta, pedidos) no se muestran en Google.
-  const privada = to.path.startsWith('/admin') || to.path.startsWith('/cuenta') || to.path.startsWith('/pedido') || to.path === '/checkout'
-  let meta = document.querySelector('meta[name="robots"]')
-  if (!meta) {
-    meta = document.createElement('meta')
-    meta.name = 'robots'
-    document.head.appendChild(meta)
-  }
-  meta.content = privada ? 'noindex, nofollow' : 'index, follow'
+  if (to.name === 'detalle') return
+  // Las páginas privadas (panel, cuenta, pedidos, carrito) no se muestran en Google.
+  const privada = to.path.startsWith('/admin') || to.path.startsWith('/cuenta') || to.path.startsWith('/pedido') || to.path === '/checkout' || to.path === '/carrito' || to.name === 'no-encontrado'
+  const ruta = to.name === 'listado' && to.query.categoria ? `/productos?categoria=${encodeURIComponent(to.query.categoria)}` : to.path
+  aplicarSeo({
+    titulo: to.name === 'inicio' ? '' : (to.name === 'listado' && to.query.categoria ? `${to.query.categoria} usadas y nuevas` : to.meta.titulo),
+    descripcion: DESCRIPCIONES[to.name],
+    ruta,
+    indexar: !privada
+  })
 })
 
 export default router
