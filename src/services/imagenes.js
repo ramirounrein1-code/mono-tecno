@@ -1,5 +1,7 @@
 // Fotos incluidas en el proyecto. En los datos se guardan como "asset:<nombre>"
 // para que LocalStorage no dependa del nombre que webpack le pone a cada archivo.
+import { imagenPermitida } from './seguridad'
+
 const fotos = {
   'rtx-3060': require('../assets/productos/rtx-3060.webp'),
   'rtx-3070': require('../assets/productos/rtx-3070.webp'),
@@ -21,7 +23,8 @@ const fotos = {
 
 // Devuelve una URL usable en <img src>: foto del proyecto, URL externa o imagen subida (data URL).
 export function resolverImagen (imagen) {
-  if (!imagen) return ''
+  // Solo fotos del proyecto, links https o fotos subidas: cualquier otra cosa se ignora.
+  if (!imagenPermitida(imagen)) return ''
   if (imagen.startsWith('asset:')) {
     const f = fotos[imagen.slice(6)]
     return f ? (f.default || f) : ''

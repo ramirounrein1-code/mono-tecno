@@ -1,14 +1,29 @@
 // Servicio de productos y pedidos: CRUD con persistencia en LocalStorage.
 // Toda la app lee y escribe a través de estas funciones.
 import { productosIniciales } from '../data/productosIniciales'
+import { imagenPermitida } from './seguridad'
 
 const CLAVE = 'monotecno_productos_v4'
 const CLAVE_PEDIDOS = 'monotecno_pedidos_v1'
 
+// Un producto guardado tiene que tener la forma correcta; si no, se descarta (datos rotos o manipulados).
+function productoValido (p) {
+  return p && typeof p.id === 'string' && typeof p.nombre === 'string' && typeof p.sku === 'string' &&
+    Number.isFinite(p.precio) && p.precio >= 0 && Number.isInteger(p.stock) && p.stock >= 0
+}
+
+// Si la foto guardada no es de un tipo permitido, se saca la foto (el producto queda).
+function limpiarImagen (p) {
+  return p.imagen && !imagenPermitida(p.imagen) ? { ...p, imagen: '' } : p
+}
+
 function leer () {
   try {
     const crudo = localStorage.getItem(CLAVE)
-    if (crudo) return JSON.parse(crudo)
+    if (crudo) {
+      const lista = JSON.parse(crudo)
+      if (Array.isArray(lista)) return lista.filter(productoValido).map(limpiarImagen)
+    }
   } catch (e) {
     console.warn('No se pudo leer LocalStorage:', e)
   }
@@ -79,7 +94,8 @@ export function restaurarProductos () {
 // ---------- Pedidos ----------
 export function obtenerPedidos () {
   try {
-    return JSON.parse(localStorage.getItem(CLAVE_PEDIDOS)) || []
+    const lista = JSON.parse(localStorage.getItem(CLAVE_PEDIDOS)) || []
+    return Array.isArray(lista) ? lista.filter((p) => p && Number.isInteger(p.numero) && Array.isArray(p.items) && p.cliente) : []
   } catch (e) {
     return []
   }
