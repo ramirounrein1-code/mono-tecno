@@ -6,17 +6,6 @@
       <span :class="['card__condicion', 'card__condicion--' + claseCondicion]">{{ producto.condicion }}</span>
       <span v-if="producto.stock === 0" class="card__agotado">Sin stock</span>
     </router-link>
-    <!-- Comparar: agrega o saca el producto de la comparación (hasta 3) -->
-    <button
-      type="button"
-      :class="['card__comparar', { activo: comparando }]"
-      :aria-pressed="comparando ? 'true' : 'false'"
-      :aria-label="(comparando ? 'Quitar de la comparación: ' : 'Comparar: ') + producto.nombre"
-      :title="comparando ? 'Quitar de la comparación' : 'Comparar'"
-      @click="$emit('comparar', producto)"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path v-if="comparando" d="M5 12l5 5 9-10" /><path v-else d="M6 20V10M12 20V4M18 20v-6" /></svg>
-    </button>
 
     <div class="card__cuerpo">
       <span class="card__cat">{{ producto.categoria }}</span>
@@ -52,7 +41,6 @@ import { formatearPesos, formatearDolares } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
 import { carrito } from '../services/carrito'
 import { precioConDescuento } from '../services/precios'
-import { estaEnComparacion } from '../services/comparar'
 
 export default {
   name: 'ProductCard',
@@ -62,7 +50,7 @@ export default {
     // Cotización del dólar oficial (de la API) para mostrar el precio aproximado en USD.
     dolar: { type: Number, default: null }
   },
-  emits: ['agregar', 'comparar'],
+  emits: ['agregar'],
   data () {
     return { imagenRota: false }
   },
@@ -90,9 +78,6 @@ export default {
       if (this.producto.stock === 0) return 'Sin stock'
       if (!this.puedeAgregar) return 'Ya está en tu carrito'
       return 'Agregar al carrito'
-    },
-    comparando () {
-      return estaEnComparacion(this.producto.id)
     },
     claseCondicion () {
       return this.producto.condicion.toLowerCase()
@@ -154,24 +139,6 @@ export default {
   font-size: 12px;
   font-weight: 600;
 }
-.card__comparar {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--borde);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
-  color: var(--navy-fijo, #0b0b2a);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.card__comparar:hover { border-color: var(--navy-fijo, #0b0b2a); }
-.card__comparar.activo { background: var(--magenta); border-color: var(--magenta); color: #fff; }
 .card__cuerpo {
   display: flex;
   flex-direction: column;

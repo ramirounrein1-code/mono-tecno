@@ -43,7 +43,7 @@ export default {
     // No se muestra en la propia página de comparar, ni en el panel ni en la compra.
     visible () {
       const r = this.$route.path
-      return this.productos.length > 0 && r !== '/comparar' && !r.startsWith('/admin') && r !== '/checkout' && r !== '/carrito'
+      return this.productos.length > 0 && r !== '/comparar' && !r.startsWith('/productos/') && !r.startsWith('/admin') && r !== '/checkout' && r !== '/carrito'
     }
   },
   methods: {
