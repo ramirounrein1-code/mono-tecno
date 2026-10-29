@@ -15,6 +15,8 @@ const routes = [
   { path: '/cuenta', name: 'cuenta', component: () => import('../views/AccountView.vue'), meta: { titulo: 'Mi cuenta', soloCliente: true } },
   { path: '/cuenta/ingresar', name: 'ingresar', component: () => import('../views/AuthView.vue'), meta: { titulo: 'Ingresar', soloInvitado: true } },
   { path: '/cuenta/registro', name: 'registro', component: () => import('../views/AuthView.vue'), meta: { titulo: 'Crear cuenta', soloInvitado: true } },
+  { path: '/comparar', name: 'comparar', component: () => import('../views/CompareView.vue'), meta: { titulo: 'Comparar' } },
+  { path: '/arma-tu-pc', name: 'armado', component: () => import('../views/BuildView.vue'), meta: { titulo: 'Armá tu PC' } },
   { path: '/acerca', name: 'acerca', component: () => import('../views/AboutView.vue'), meta: { titulo: 'Nosotros' } },
 
   // ---- Administración (requiere iniciar sesión) ----
