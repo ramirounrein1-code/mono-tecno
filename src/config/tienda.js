@@ -48,3 +48,14 @@ export const ADMIN_HASH = '33415c48e8812d065820050035541383e92f1be1a2f35c1b08a1b
 // Ingreso con Google: pegá acá el "ID de cliente" de Google Cloud (o definilo como VUE_APP_GOOGLE_CLIENT_ID en Vercel).
 // Si queda vacío, el botón "Continuar con Google" avisa que falta configurarlo. Ver README.
 export const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || ''
+
+// Cuenta del dueño de la tienda: viene creada de fábrica en todos los navegadores.
+// La contraseña no está escrita: solo su hash PBKDF2 con sal (igual que cualquier cuenta).
+// Con esta cuenta, "Mi cuenta" muestra además el acceso al panel de administración.
+export const CUENTA_DUENIO = {
+  email: 'ramirounrein1@gmail.com',
+  nombre: 'Ramiro',
+  apellido: 'Unrein',
+  sal: '910bf0b2c63c9b0434bd1c13256e87ef',
+  hash: '2e251624b58cdb32b3412acab76843b81d1aaa864fe075f8fc1115069865393e'
+}
