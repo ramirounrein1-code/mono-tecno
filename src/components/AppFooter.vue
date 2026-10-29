@@ -21,14 +21,11 @@
         <h2>Ayuda</h2>
         <router-link to="/cuenta">Mi cuenta y mis pedidos</router-link>
         <router-link to="/acerca">Nosotros y cómo comprar</router-link>
-        <span>Envíos a todo el país</span>
-        <span>Mercado Pago, transferencia y efectivo</span>
       </div>
       <div class="footer__col">
         <h2>Contacto</h2>
         <a :href="'https://instagram.com/' + tienda.instagram" target="_blank" rel="noopener noreferrer">Instagram @{{ tienda.instagram }}</a>
-        <span>{{ tienda.zona }}</span>
-        <span>{{ tienda.horarios }}</span>
+        <a href="https://www.google.com/maps/search/?api=1&query=Ituzaing%C3%B3%2C%20Buenos%20Aires" target="_blank" rel="noopener noreferrer">{{ tienda.zona }}</a>
       </div>
     </div>
     <div class="contenedor footer__legal">© {{ anio }} mono.tecno · Todos los derechos reservados</div>
