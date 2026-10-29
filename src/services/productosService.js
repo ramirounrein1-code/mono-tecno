@@ -5,6 +5,7 @@ import { imagenPermitida } from './seguridad'
 
 const CLAVE = 'monotecno_productos_v4'
 const CLAVE_PEDIDOS = 'monotecno_pedidos_v1'
+const CLAVE_ULTIMO = 'monotecno_ultimo_pedido'
 
 // Un producto guardado tiene que tener la forma correcta; si no, se descarta (datos rotos o manipulados).
 function productoValido (p) {
@@ -104,15 +105,44 @@ export function obtenerPedidos () {
 // Cambia el estado de un pedido (lo usa el panel de administración).
 export const ESTADOS_PEDIDO = ['Pendiente de pago', 'Pagado', 'Enviado', 'Entregado', 'Cancelado']
 
-export function actualizarEstadoPedido (numero, estado) {
-  const pedidos = obtenerPedidos()
-  const p = pedidos.find((x) => x.numero === numero)
-  if (!p) return null
-  p.estado = estado
+export const ESTADOS_FINALIZADOS = ['Entregado', 'Cancelado']
+
+function guardarPedidos (pedidos) {
   try {
     localStorage.setItem(CLAVE_PEDIDOS, JSON.stringify(pedidos))
   } catch (e) { /* sin espacio */ }
+}
+
+// Devuelve (signo = +1) o vuelve a descontar (signo = -1) el stock de los productos de un pedido.
+function moverStock (pedido, signo) {
+  const productos = leer()
+  pedido.items.forEach((item) => {
+    const p = productos.find((x) => x.id === item.id)
+    if (p) p.stock = Math.max(0, p.stock + signo * item.cantidad)
+  })
+  guardar(productos)
+}
+
+// Cambia el estado. Si se cancela, los productos vuelven a estar a la venta (y al revés si se "descancela").
+export function actualizarEstadoPedido (numero, estado) {
+  const pedidos = obtenerPedidos()
+  const p = pedidos.find((x) => x.numero === numero)
+  if (!p || !ESTADOS_PEDIDO.includes(estado)) return null
+  if (estado === 'Cancelado' && p.estado !== 'Cancelado') moverStock(p, +1)
+  if (p.estado === 'Cancelado' && estado !== 'Cancelado') moverStock(p, -1)
+  p.estado = estado
+  guardarPedidos(pedidos)
   return p
+}
+
+// Borra un pedido de la lista. Si todavía no se había entregado ni cancelado, su stock vuelve a la venta.
+export function eliminarPedido (numero) {
+  const pedidos = obtenerPedidos()
+  const p = pedidos.find((x) => x.numero === numero)
+  if (!p) return false
+  if (!['Entregado', 'Enviado', 'Cancelado'].includes(p.estado)) moverStock(p, +1)
+  guardarPedidos(pedidos.filter((x) => x.numero !== numero))
+  return true
 }
 
 export function obtenerPedido (numero) {
@@ -128,7 +158,10 @@ export function registrarPedido (pedido) {
   })
   guardar(productos)
   const pedidos = obtenerPedidos()
-  const numero = 1000 + pedidos.length + 1
+  // El número nunca se repite, aunque se borren pedidos: se guarda el último usado.
+  const ultimo = Math.max(1000, Number(localStorage.getItem(CLAVE_ULTIMO)) || 0, ...pedidos.map((p) => p.numero))
+  const numero = ultimo + 1
+  try { localStorage.setItem(CLAVE_ULTIMO, String(numero)) } catch (e) { /* nada */ }
   const completo = { ...pedido, numero, estado: 'Pendiente de pago', fecha: new Date().toISOString() }
   pedidos.unshift(completo)
   try {
