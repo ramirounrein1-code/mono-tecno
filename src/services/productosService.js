@@ -86,6 +86,35 @@ export function skuDisponible (sku, idActual = null) {
   return !leer().some((p) => p.sku.toUpperCase() === sku.toUpperCase() && p.id !== idActual)
 }
 
+// Próximo SKU libre (MT-0001, MT-0002, ...): el formulario de alta lo propone solo.
+export function siguienteSku () {
+  const max = leer().reduce((m, p) => {
+    const n = /^MT-(\d{4})$/.exec(p.sku)
+    return n ? Math.max(m, Number(n[1])) : m
+  }, 0)
+  return 'MT-' + String(max + 1).padStart(4, '0')
+}
+
+// Suma o resta unidades de stock (atajo del panel). Nunca baja de 0 ni pasa de 999.
+export function ajustarStock (id, cambio) {
+  const productos = leer()
+  const p = productos.find((x) => x.id === id)
+  if (!p) return null
+  p.stock = Math.min(999, Math.max(0, p.stock + cambio))
+  guardar(productos)
+  return p.stock
+}
+
+// Marca o desmarca un producto como destacado (atajo del panel).
+export function alternarDestacado (id) {
+  const productos = leer()
+  const p = productos.find((x) => x.id === id)
+  if (!p) return null
+  p.destacado = !p.destacado
+  guardar(productos)
+  return p.destacado
+}
+
 // Vuelve al catálogo inicial.
 export function restaurarProductos () {
   guardar(productosIniciales)
