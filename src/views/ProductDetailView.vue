@@ -101,6 +101,7 @@ import { precioConDescuento } from '../services/precios'
 import { obtenerProducto, obtenerProductos } from '../services/productosService'
 import { obtenerCotizaciones, formatearPesos, formatearDolares } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
+import { aplicarSeo, datosProducto } from '../services/seo'
 import { carrito, agregar } from '../services/carrito'
 
 export default {
@@ -161,6 +162,18 @@ export default {
   },
   created () {
     this.producto = obtenerProducto(this.id)
+    if (this.producto) {
+      const p = this.producto
+      aplicarSeo({
+        titulo: `${p.nombre} ${p.condicion.toLowerCase()}`,
+        descripcion: `${p.nombre} (${p.condicion.toLowerCase()}) a ${formatearPesos(p.precio)}. ${p.specs}. ${p.descripcion}`,
+        ruta: `/productos/${p.id}`,
+        imagen: this.foto,
+        datos: datosProducto(p, this.foto)
+      })
+    } else {
+      aplicarSeo({ titulo: 'Producto no encontrado', ruta: `/productos/${this.id}`, indexar: false })
+    }
   },
   async mounted () {
     this.observarBoton(this.$refs.compra)

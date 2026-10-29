@@ -13,14 +13,30 @@
           </a>
           <router-link to="/productos" class="btn btn--fantasma">Ver el catálogo</router-link>
         </div>
+        <p class="nos__horario">{{ tienda.zona }} · {{ tienda.horarios }}</p>
       </div>
-      <div class="nos__marca" aria-hidden="true">
-        <img :src="logo" alt="" width="220" height="220">
-        <ul class="nos__datos">
-          <li><span>Zona</span>{{ tienda.zona }}</li>
-          <li><span>Horario</span>{{ tienda.horarios }}</li>
+      <!-- Informe de revisión de ejemplo: muestra lo que hacemos con cada placa antes de venderla -->
+      <figure class="informe" aria-labelledby="t-informe">
+        <header class="informe__cabecera">
+          <div>
+            <p id="t-informe" class="informe__titulo">Informe de revisión</p>
+            <p class="informe__equipo">Ejemplo · NVIDIA RTX 3060 12GB</p>
+          </div>
+          <svg class="informe__icono" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h20v10H2z" /><path d="M7 17v3M17 17v3" /><circle cx="9" cy="12" r="2" /><circle cx="16" cy="12" r="2" /></svg>
+        </header>
+        <ul class="informe__lista">
+          <li v-for="(f, i) in informe" :key="f.dato" :style="{ '--i': i }">
+            <span class="informe__dato">{{ f.dato }}</span>
+            <span class="informe__valor">{{ f.valor }}</span>
+            <span v-if="f.nivel" class="informe__barra" aria-hidden="true"><span :style="{ '--nivel': f.nivel }"></span></span>
+          </li>
         </ul>
-      </div>
+        <footer class="informe__pie">
+          <span class="informe__sello">Apta para la venta</span>
+          <span class="informe__garantia">3 meses de garantía</span>
+        </footer>
+        <figcaption class="sr-only">Ejemplo del informe que hacemos con cada placa de video usada antes de publicarla.</figcaption>
+      </figure>
     </section>
 
     <!-- 2. Qué hacemos -->
@@ -124,7 +140,6 @@
 </template>
 
 <script>
-import logo from '../assets/logo-cuadrado.jpg'
 import { TIENDA } from '../config/tienda'
 import { formatearPesos } from '../services/dolarService'
 
@@ -132,8 +147,14 @@ export default {
   name: 'AboutView',
   data () {
     return {
-      logo,
       tienda: TIENDA,
+      informe: [
+        { dato: 'Stress test de 30 minutos', valor: 'Sin errores' },
+        { dato: 'Temperatura en carga', valor: '68 °C', nivel: 0.68 },
+        { dato: 'Rendimiento vs. referencia', valor: '98 %', nivel: 0.98 },
+        { dato: 'Ventiladores', valor: 'Sin ruidos' },
+        { dato: 'Pasta térmica', valor: 'Cambiada' }
+      ],
       abierta: null,
       servicios: [
         { titulo: 'Reparación y limpieza', texto: 'Diagnóstico, limpieza interna, cambio de pasta térmica y mejoras para que tu PC ande fresca y rápida.', icono: ['M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z'] },
@@ -192,7 +213,28 @@ export default {
 .nos__hero h1 { font-size: clamp(36px, 6.5vw, 64px); line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance; }
 .nos__hero p { margin: 0; font-size: 18px; color: var(--texto-2); max-width: 560px; }
 .nos__acciones { display: flex; flex-wrap: wrap; gap: 10px; }
-.nos__marca { display: none; }
+.nos__hero .nos__horario { font-size: 14px; }
+.informe { margin: 0; background: var(--papel); border: 1px solid var(--borde); border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 18px 40px -24px rgba(11, 11, 42, 0.35); }
+.informe__cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--borde); }
+.informe__titulo { margin: 0; font-weight: 650; font-size: 18px; }
+.informe__equipo { margin: 2px 0 0; font-size: 14px; color: var(--texto-2); }
+.informe__icono { color: var(--magenta); flex: none; }
+.informe__lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.informe__lista li { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: baseline; font-size: 15px; animation: informe-fila 0.4s ease both; animation-delay: calc(var(--i) * 0.12s + 0.2s); }
+.informe__dato { color: var(--texto-2); }
+.informe__valor { font-weight: 650; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; }
+.informe__valor::before { content: ''; width: 16px; height: 16px; border-radius: 999px; background: var(--exito) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 11px no-repeat; }
+.informe__barra { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--fondo); overflow: hidden; }
+.informe__barra span { display: block; height: 100%; width: calc(var(--nivel) * 100%); border-radius: inherit; background: linear-gradient(90deg, var(--exito), #f2c14e 95%); transform-origin: left; animation: informe-barra 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 0.7s; }
+.informe__pie { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px dashed var(--borde); flex-wrap: wrap; }
+.informe__sello { display: inline-block; padding: 6px 12px; border: 2px solid var(--magenta); border-radius: 8px; color: var(--magenta-texto); font-weight: 700; font-size: 14px; transform: rotate(-4deg); animation: informe-sello 0.35s cubic-bezier(0.3, 1.5, 0.6, 1) both; animation-delay: 1.3s; }
+.informe__garantia { font-size: 14px; color: var(--texto-2); }
+@keyframes informe-fila { from { opacity: 0; transform: translateY(6px); } }
+@keyframes informe-barra { from { transform: scaleX(0); } }
+@keyframes informe-sello { from { opacity: 0; transform: rotate(-4deg) scale(1.6); } }
+@media (prefers-reduced-motion: reduce) {
+  .informe__lista li, .informe__barra span, .informe__sello { animation: none; }
+}
 
 /* Qué hacemos */
 .servicios { display: grid; gap: 12px; }
@@ -261,11 +303,7 @@ export default {
 @media (min-width: 900px) {
   .nos { gap: 72px; }
   .nos__hero { padding-top: 56px; grid-template-columns: 1.4fr 1fr; gap: 56px; }
-  .nos__marca { display: flex; flex-direction: column; gap: 14px; align-items: stretch; justify-self: end; width: 100%; max-width: 360px; }
-  .nos__marca img { width: 100%; height: auto; border-radius: 28px; }
-  .nos__datos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .nos__datos li { background: var(--papel); border: 1px solid var(--borde); border-radius: 14px; padding: 12px 14px; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
-  .nos__datos span { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-2); font-weight: 600; }
+  .informe { justify-self: end; width: 100%; max-width: 400px; padding: 22px; }
   .pasos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .paso { flex-direction: column; }
   .nos__info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
