@@ -64,7 +64,7 @@ export default {
   height: 36px;
   border-radius: 10px;
   background: var(--rosa);
-  color: var(--navy);
+  color: var(--sobre-rosa);
   display: flex;
   align-items: center;
   justify-content: center;

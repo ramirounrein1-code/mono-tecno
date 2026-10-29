@@ -13,6 +13,8 @@
         <router-link :to="{ name: 'listado', query: { categoria: 'Placas de video' } }">Placas de video</router-link>
         <router-link :to="{ name: 'listado', query: { categoria: 'Procesadores' } }">Procesadores</router-link>
         <router-link to="/productos">Todo el catálogo</router-link>
+        <router-link to="/arma-tu-pc">Armá tu PC</router-link>
+        <router-link to="/comparar">Comparar productos</router-link>
         <router-link to="/carrito">Carrito</router-link>
       </div>
       <div class="footer__col">
@@ -51,7 +53,7 @@ export default {
 </script>
 
 <style scoped>
-.footer { background: var(--navy); color: #fff; padding: 56px 0 32px; margin-top: 40px; }
+.footer { background: var(--pie); color: #fff; padding: 56px 0 32px; margin-top: 40px; }
 .footer__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 32px; }
 .footer__logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; }
 .footer__logo img { border-radius: 999px; }

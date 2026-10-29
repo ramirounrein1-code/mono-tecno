@@ -16,10 +16,16 @@
 
       <nav class="nav__links" aria-label="Principal">
         <router-link to="/productos" class="nav__link">Catálogo</router-link>
+        <router-link to="/arma-tu-pc" class="nav__link">Armá tu PC</router-link>
         <router-link to="/acerca" class="nav__link">Nosotros</router-link>
         <router-link v-if="usuario" to="/cuenta" class="nav__link nav__cuenta"><span class="nav__avatar" aria-hidden="true">{{ usuario.nombre[0] }}</span>{{ usuario.nombre }}</router-link>
         <router-link v-else :to="{ name: 'ingresar' }" class="nav__link">Ingresar</router-link>
       </nav>
+
+      <button type="button" class="nav__tema" :aria-label="oscuro ? 'Pasar a modo claro' : 'Pasar a modo oscuro'" :aria-pressed="oscuro ? 'true' : 'false'" @click="alternarTema">
+        <svg v-if="oscuro" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" /><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" /></svg>
+        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+      </button>
 
       <router-link to="/carrito" class="nav__carrito" :aria-label="`Carrito, ${cantidad} ${cantidad === 1 ? 'producto' : 'productos'}`">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6.2" /><circle cx="10" cy="20.5" r="1.2" /><circle cx="17" cy="20.5" r="1.2" /></svg>
@@ -35,6 +41,7 @@
 import logo from '../assets/logo-circulo.png'
 import { carrito } from '../services/carrito'
 import { sesion } from '../services/cuentas'
+import { tema, temaActual, alternarTema } from '../services/tema'
 
 export default {
   name: 'NavBar',
@@ -42,6 +49,9 @@ export default {
     return { logo, texto: '' }
   },
   computed: {
+    oscuro () {
+      return tema && temaActual() === 'dark'
+    },
     usuario () {
       return sesion.usuario
     },
@@ -58,6 +68,7 @@ export default {
     }
   },
   methods: {
+    alternarTema () { alternarTema() },
     buscar () {
       const q = this.texto.trim()
       this.$router.push({ name: 'listado', query: q ? { q } : {} })
@@ -71,15 +82,15 @@ export default {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(244, 241, 240, 0.9);
+  background: color-mix(in srgb, var(--fondo) 90%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--borde);
 }
 .nav__barra {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas: "marca buscar";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "marca buscar tema";
   align-items: center;
   gap: 10px 16px;
   padding-top: 10px;
@@ -153,6 +164,20 @@ export default {
 .nav__link.router-link-active { border-bottom-color: var(--magenta); }
 .nav__cuenta { display: inline-flex; align-items: center; gap: 8px; }
 .nav__avatar { width: 28px; height: 28px; border-radius: 999px; background: var(--magenta); color: #fff; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; text-transform: uppercase; }
+.nav__tema {
+  grid-area: tema;
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--papel);
+  color: var(--texto);
+  cursor: pointer;
+}
+.nav__tema:hover { border-color: var(--texto-2); }
 .nav__carrito {
   display: none !important;
   grid-area: carrito;
@@ -190,8 +215,8 @@ export default {
 
 @media (min-width: 860px) {
   .nav__barra {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-    grid-template-areas: "marca buscar links carrito";
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas: "marca buscar links tema carrito";
     gap: 24px;
     min-height: 72px;
     padding-top: 0;

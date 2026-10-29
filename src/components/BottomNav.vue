@@ -57,7 +57,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-right, 0px));
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--papel) 94%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--borde);
@@ -93,7 +93,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #fff;
+  border: 2px solid var(--papel);
   font-variant-numeric: tabular-nums;
 }
 .pop-enter-active { transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.6, 1); }
