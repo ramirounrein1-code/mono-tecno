@@ -29,6 +29,8 @@ import NavBar from './components/NavBar.vue'
 import AppFooter from './components/AppFooter.vue'
 import ToastMessage from './components/ToastMessage.vue'
 import BottomNav from './components/BottomNav.vue'
+import { estaLogueado, registrarActividad } from './services/auth'
+import { estaLogueadoCliente } from './services/cuentas'
 
 export default {
   name: 'App',
@@ -36,10 +38,30 @@ export default {
   data () {
     return {
       toast: { visible: false, mensaje: '', tipo: 'exito', accion: null },
-      timer: null
+      timer: null,
+      vigilante: null
     }
   },
+  mounted () {
+    // Actividad del usuario: mantiene abierta la sesión del panel mientras se usa.
+    window.addEventListener('pointerdown', registrarActividad, { passive: true })
+    window.addEventListener('keydown', registrarActividad, { passive: true })
+    // Si se cierra la sesión en otra pestaña, esta también se entera.
+    window.addEventListener('storage', this.sesionCambio)
+    // Cada minuto revisa si la sesión del panel venció (8 h o 30 min sin actividad).
+    this.vigilante = setInterval(this.revisarAdmin, 60000)
+  },
   methods: {
+    async revisarAdmin () {
+      if (this.$route.meta.soloAdmin && !(await estaLogueado())) {
+        this.mostrarToast({ mensaje: 'Por seguridad se cerró la sesión del panel. Volvé a ingresar.', tipo: 'info' })
+        this.$router.replace({ name: 'login', query: { redirect: this.$route.fullPath } })
+      }
+    },
+    sesionCambio (e) {
+      if (e.key !== 'monotecno_sesion') return
+      if (!estaLogueadoCliente() && this.$route.meta.soloCliente) this.$router.replace({ name: 'ingresar' })
+    },
     // Las vistas emiten "notificar" y App muestra el aviso.
     mostrarToast ({ mensaje, tipo = 'exito', accion = null }) {
       this.toast = { visible: true, mensaje, tipo, accion }
@@ -49,6 +71,10 @@ export default {
   },
   beforeUnmount () {
     clearTimeout(this.timer)
+    clearInterval(this.vigilante)
+    window.removeEventListener('pointerdown', registrarActividad)
+    window.removeEventListener('keydown', registrarActividad)
+    window.removeEventListener('storage', this.sesionCambio)
   }
 }
 </script>
