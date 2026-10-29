@@ -66,7 +66,7 @@
     </section>
 
     <!-- 5. Envíos, pagos y garantía -->
-    <section class="contenedor nos__bloque nos__info" aria-label="Envíos, pagos y garantía">
+    <section class="contenedor nos__bloque nos__info" aria-label="Envíos y garantía">
       <div class="tarjeta info">
         <h2>Envíos y retiro</h2>
         <ul class="envios">
@@ -75,9 +75,6 @@
             <span class="texto-sec">{{ e.detalle }}</span>
           </li>
         </ul>
-      </div>
-      <div class="tarjeta info">
-        <MediosDePago />
       </div>
       <div class="tarjeta info">
         <h2>Garantía</h2>
@@ -125,13 +122,11 @@
 
 <script>
 import logo from '../assets/logo-cuadrado.jpg'
-import MediosDePago from '../components/MediosDePago.vue'
 import { TIENDA } from '../config/tienda'
 import { formatearPesos } from '../services/dolarService'
 
 export default {
   name: 'AboutView',
-  components: { MediosDePago },
   data () {
     return {
       logo,
@@ -233,10 +228,12 @@ export default {
 .gratis { color: var(--exito); }
 
 /* Preguntas frecuentes */
-.faq { display: flex; flex-direction: column; gap: 10px; max-width: 860px; }
+.faq { display: flex; flex-direction: column; gap: 10px; }
 .faq__item { overflow: hidden; }
 .faq__item h3 { margin: 0; font-size: inherit; }
 .faq__pregunta { width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border: 0; background: transparent; font: inherit; font-size: 17px; font-weight: 600; color: var(--texto); text-align: left; cursor: pointer; }
+.faq__pregunta:focus { outline: none; }
+.faq__pregunta:focus-visible { outline: 2px solid var(--magenta); outline-offset: -4px; border-radius: 14px; }
 .faq__flecha { flex: none; transition: transform 0.2s ease; color: var(--texto-2); }
 .faq__flecha--abierta { transform: rotate(180deg); }
 .faq__respuesta { margin: 0; padding: 0 20px 18px; color: var(--texto-2); }
@@ -266,7 +263,7 @@ export default {
   .nos__datos span { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-2); font-weight: 600; }
   .pasos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .paso { flex-direction: column; }
-  .nos__info { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .nos__info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nos__banda { padding: 64px 0; }
   .contacto { flex-direction: row; align-items: center; justify-content: space-between; padding: 40px; }
   .contacto__acciones { flex: none; }
