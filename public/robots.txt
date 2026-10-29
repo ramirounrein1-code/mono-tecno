@@ -1,5 +1,9 @@
 User-agent: *
+Allow: /
 Disallow: /admin
 Disallow: /cuenta
 Disallow: /pedido
 Disallow: /checkout
+Disallow: /carrito
+
+Sitemap: https://mono-tecno-tienda.vercel.app/sitemap.xml
