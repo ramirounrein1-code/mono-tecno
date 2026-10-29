@@ -8,14 +8,11 @@
     </router-link>
 
     <div class="card__cuerpo">
-      <span class="card__cat">{{ producto.categoria }}</span>
       <h3 class="card__nombre">
         <router-link :to="{ name: 'detalle', params: { id: producto.id } }">{{ producto.nombre }}</router-link>
       </h3>
-      <span class="card__specs" :title="producto.specs">{{ producto.specs }}</span>
       <div class="card__precios">
         <span class="card__precio">{{ precio }}</span>
-        <span v-if="precioUsd" class="card__usd">≈ {{ precioUsd }}</span>
       </div>
       <span class="card__transfer">{{ precioTransferencia }} con transferencia</span>
       <span v-if="producto.stock > 0 && producto.stock <= 1" class="card__ultima">¡Última unidad!</span>
@@ -37,7 +34,7 @@
 
 <script>
 import CategoryIcon from './CategoryIcon.vue'
-import { formatearPesos, formatearDolares } from '../services/dolarService'
+import { formatearPesos } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
 import { carrito } from '../services/carrito'
 import { precioConDescuento } from '../services/precios'
@@ -63,9 +60,6 @@ export default {
     },
     precioTransferencia () {
       return formatearPesos(precioConDescuento(this.producto.precio))
-    },
-    precioUsd () {
-      return this.dolar ? formatearDolares(Math.round(this.producto.precio / this.dolar)) : ''
     },
     enCarrito () {
       const item = carrito.items.find((i) => i.id === this.producto.id)
@@ -146,30 +140,19 @@ export default {
   padding: 14px 16px 16px;
   flex: 1;
 }
-.card__cat {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--texto-2);
-}
 .card__nombre { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; }
 .card__nombre a { color: var(--texto); }
-.card__specs { font-size: 13px; line-height: 1.4; color: var(--texto-2); }
-/* Nombre y specs ocupan siempre el mismo alto (2 líneas): así el precio queda a la misma altura en todas las tarjetas. */
-.card__nombre,
-.card__specs {
+/* El nombre ocupa siempre 2 líneas: así el precio queda a la misma altura en todas las tarjetas. */
+.card__nombre {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+  min-height: calc(2em * 1.3);
 }
-.card__nombre { min-height: calc(2em * 1.3); }
-.card__specs { min-height: calc(2em * 1.4); }
 .card__precios { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .card__precio { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.card__usd { font-size: 13px; color: var(--texto-2); font-variant-numeric: tabular-nums; }
 .card__ultima { font-size: 13px; font-weight: 600; color: var(--magenta-texto); }
 .card__transfer { font-size: 13px; color: var(--exito); font-weight: 500; }
 .card__pie { margin-top: auto; padding-top: 14px; }
@@ -180,12 +163,9 @@ export default {
 /* En celular la tienda muestra 2 productos por fila: la tarjeta se compacta. */
 @media (max-width: 599px) {
   .card__cuerpo { padding: 10px 10px 12px; gap: 3px; }
-  .card__cat { font-size: 10px; }
-  .card__nombre { font-size: 14px; -webkit-line-clamp: 3; line-clamp: 3; min-height: calc(3em * 1.3); }
-  .card__specs { font-size: 12px; }
-  .card__precio { font-size: 18px; }
-  .card__usd { font-size: 11px; }
-  .card__ultima { font-size: 12px; }
+    .card__nombre { font-size: 14px; -webkit-line-clamp: 3; line-clamp: 3; min-height: calc(3em * 1.3); }
+    .card__precio { font-size: 18px; }
+    .card__ultima { font-size: 12px; }
   .card__transfer { font-size: 11px; }
   .card__condicion { top: 6px; left: 6px; padding: 3px 8px; font-size: 11px; }
   .card__pie { padding-top: 10px; }

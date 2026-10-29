@@ -1,24 +1,25 @@
 <template>
-  <figure v-show="soportado" class="gpu3d">
-    <div
-      ref="lienzo"
-      class="gpu3d__lienzo"
-      role="img"
-      aria-label="Placa de video en 3D. Arrastrala con el mouse para girarla."
-      @pointerdown="empezar"
-    ></div>
-    <figcaption class="gpu3d__ayuda">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3" /><path d="M18 3v4h-4M6 21v-4h4" /></svg>
-      Arrastrala para girarla
-    </figcaption>
-  </figure>
+  <div
+    v-show="soportado"
+    ref="lienzo"
+    class="gpu3d"
+    role="img"
+    aria-label="Placa de video en 3D. Se puede girar arrastrándola con el mouse."
+    @pointerdown="empezar"
+  ></div>
 </template>
 
 <script>
-// Placa de video en 3D hecha con three.js (formas simples, sin marcas).
-// Solo se usa en computadora. Se gira arrastrando con el mouse; si nadie la toca, gira sola despacio.
+// Placa de video en 3D hecha con three.js (modelo propio, genérico, sin marcas).
+// Solo se usa en computadora. Se gira arrastrando con el mouse; no gira sola.
 import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+
+// Medidas aproximadas de una placa de 3 ventiladores (en unidades de la escena)
+const LARGO = 3.1
+const ALTO = 1.22
+const GROSOR_CARCASA = 0.2
 
 export default {
   name: 'GpuModel3D',
@@ -34,8 +35,7 @@ export default {
   },
   beforeUnmount () {
     cancelAnimationFrame(this.cuadro)
-    window.removeEventListener('pointermove', this.mover)
-    window.removeEventListener('pointerup', this.soltar)
+    this.soltar()
     if (this.observadorTam) this.observadorTam.disconnect()
     if (this.observadorVista) this.observadorVista.disconnect()
     if (this.escena) {
@@ -43,6 +43,7 @@ export default {
         if (o.geometry) o.geometry.dispose()
         if (o.material) o.material.dispose()
       })
+      if (this.escena.environment) this.escena.environment.dispose()
     }
     if (this.renderer) {
       this.renderer.dispose()
@@ -57,29 +58,40 @@ export default {
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
       renderer.outputColorSpace = THREE.SRGBColorSpace
+      renderer.toneMapping = THREE.ACESFilmicToneMapping
+      renderer.toneMappingExposure = 1.35
       el.appendChild(renderer.domElement)
       this.renderer = renderer
 
       const escena = new THREE.Scene()
+      // Reflejos de "estudio" para que los metales se vean reales
+      const pmrem = new THREE.PMREMGenerator(renderer)
+      escena.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+      pmrem.dispose()
       this.escena = escena
-      const camara = new THREE.PerspectiveCamera(32, 1, 0.1, 50)
-      camara.position.set(0, 0.15, 5.0)
-      this.camara = camara
 
-      // Luces: ambiente suave, una principal y un contraluz magenta de la marca.
-      escena.add(new THREE.HemisphereLight(0xffffff, 0x30283a, 1.6))
-      const principal = new THREE.DirectionalLight(0xffffff, 3.2)
-      principal.position.set(3, 4, 5)
+      const principal = new THREE.DirectionalLight(0xffffff, 2.4)
+      principal.position.set(3, 5, 6)
       escena.add(principal)
-      const contraluz = new THREE.DirectionalLight(0xd63384, 2.4)
-      contraluz.position.set(-4, 1, -3)
+      const relleno = new THREE.DirectionalLight(0xdfe6ff, 1.0)
+      relleno.position.set(-4, -2, 5)
+      escena.add(relleno)
+      const trasera = new THREE.DirectionalLight(0xffffff, 1.8)
+      trasera.position.set(2, 3, -6)
+      escena.add(trasera)
+      const contraluz = new THREE.DirectionalLight(0xd63384, 1.2)
+      contraluz.position.set(-5, 2, -4)
       escena.add(contraluz)
 
-      this.placa = this.armarPlaca()
-      this.placa.rotation.set(0.32, -0.55, 0)
-      escena.add(this.placa)
+      this.camara = new THREE.PerspectiveCamera(30, 1, 0.1, 60)
 
-      this.giro = { x: 0.32, y: -0.55 }
+      this.placa = this.armarPlaca()
+      escena.add(this.placa)
+      // Radio de la esfera que envuelve la placa: sirve para que nunca se corte al girarla.
+      const caja = new THREE.Box3().setFromObject(this.placa)
+      this.radio = caja.getBoundingSphere(new THREE.Sphere()).radius
+
+      this.giro = { x: 0.28, y: -0.6 }
       this.velocidad = { x: 0, y: 0 }
       this.arrastrando = false
       this.visible = true
@@ -87,7 +99,6 @@ export default {
       this.ajustarTamano()
       this.observadorTam = new ResizeObserver(() => this.ajustarTamano())
       this.observadorTam.observe(el)
-      // No dibuja mientras la placa no está en pantalla.
       this.observadorVista = new IntersectionObserver(([e]) => {
         this.visible = e.isIntersecting
         if (this.visible) this.animar()
@@ -98,93 +109,164 @@ export default {
 
     armarPlaca () {
       const g = new THREE.Group()
-      const mat = (color, metal = 0.3, rugosidad = 0.5, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness: metal, roughness: rugosidad, ...extra })
+      const mat = (color, metalness, roughness, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness, roughness, ...extra })
 
-      const carcasa = mat(0x1b1a22, 0.45, 0.45)
-      const negro = mat(0x0c0b10, 0.2, 0.8)
-      const metal = mat(0xb9bcc6, 0.95, 0.3)
-      const oro = mat(0xd9b04c, 1, 0.3)
-      const magenta = mat(0xd63384, 0.2, 0.4, { emissive: 0xd63384, emissiveIntensity: 0.55 })
-      const pcb = mat(0x14281f, 0.1, 0.7)
+      const carcasa = mat(0x3a3d46, 0.75, 0.32)
+      const plata = mat(0xc8ccd4, 1, 0.22)
+      const aluminio = mat(0xd2d6dd, 0.95, 0.28)
+      const negro = mat(0x08080b, 0.3, 0.6)
+      const plastico = mat(0x141418, 0.1, 0.55)
+      const cobre = mat(0xc77b4a, 1, 0.28)
+      const oro = mat(0xe0b553, 1, 0.25)
+      const pcb = mat(0x10241a, 0.15, 0.55)
+      const backplateMat = mat(0x5a5e68, 0.5, 0.45)
+      const rgb = mat(0xd63384, 0, 0.4, { emissive: 0xd63384, emissiveIntensity: 1.4 })
 
-      // Placa (PCB), backplate y carcasa
-      const placaPcb = new THREE.Mesh(new THREE.BoxGeometry(2.9, 1.08, 0.05), pcb)
-      placaPcb.position.z = -0.17
-      g.add(placaPcb)
-      const backplate = new THREE.Mesh(new RoundedBoxGeometry(2.9, 1.08, 0.05, 2, 0.02), mat(0x2a2933, 0.8, 0.35))
-      backplate.position.z = -0.23
-      g.add(backplate)
-      const cuerpo = new THREE.Mesh(new RoundedBoxGeometry(2.86, 1.12, 0.26, 4, 0.08), carcasa)
-      cuerpo.position.z = 0.0
+      // ---- Carcasa delantera (cubre los ventiladores) ----
+      const cuerpo = new THREE.Mesh(new RoundedBoxGeometry(LARGO, ALTO, GROSOR_CARCASA, 5, 0.06), carcasa)
+      cuerpo.position.z = 0.06
       g.add(cuerpo)
-
-      // Disipador: aletas que asoman por arriba y por abajo
-      const aleta = new THREE.BoxGeometry(0.012, 0.06, 0.2)
-      for (let i = 0; i < 70; i++) {
-        const x = -1.3 + i * (2.6 / 69)
-        for (const y of [0.585, -0.585]) {
-          const a = new THREE.Mesh(aleta, metal)
-          a.position.set(x, y, -0.06)
-          g.add(a)
-        }
+      // Molduras plateadas en diagonal entre los ventiladores
+      for (const x of [-0.5, 0.5]) {
+        const moldura = new THREE.Mesh(new THREE.BoxGeometry(0.035, ALTO * 0.92, 0.012), plata)
+        moldura.position.set(x, 0, 0.165)
+        moldura.rotation.z = 0.32
+        g.add(moldura)
       }
+      // Tira de luz RGB en el borde superior
+      const tira = new THREE.Mesh(new THREE.BoxGeometry(LARGO * 0.7, 0.025, 0.03), rgb)
+      tira.position.set(0.15, ALTO / 2 - 0.01, 0.1)
+      g.add(tira)
 
-      // Franja de luz magenta
-      const franja = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.03, 0.02), magenta)
-      franja.position.set(0.1, 0.5, 0.135)
-      g.add(franja)
-
-      // Tres ventiladores
+      // ---- Ventiladores con aspas curvas ----
+      const formaAspa = new THREE.Shape()
+      formaAspa.moveTo(0.11, -0.035)
+      formaAspa.quadraticCurveTo(0.27, -0.11, 0.425, -0.05)
+      formaAspa.lineTo(0.43, 0.07)
+      formaAspa.quadraticCurveTo(0.28, 0.045, 0.11, 0.05)
+      formaAspa.closePath()
+      const aspaGeo = new THREE.ExtrudeGeometry(formaAspa, { depth: 0.008, bevelEnabled: false, curveSegments: 10 })
+      const aspaMat = mat(0x24252b, 0.2, 0.42)
       this.ventiladores = []
-      const aspa = new THREE.BoxGeometry(0.31, 0.11, 0.012)
-      for (const x of [-0.92, 0.02, 0.96]) {
-        const hueco = new THREE.Mesh(new THREE.CircleGeometry(0.43, 48), negro)
-        hueco.position.set(x, 0, 0.131)
+      for (const x of [-1.0, 0.0, 1.0]) {
+        const hueco = new THREE.Mesh(new THREE.CylinderGeometry(0.455, 0.455, 0.05, 64), negro)
+        hueco.rotation.x = Math.PI / 2
+        hueco.position.set(x, 0, 0.145)
         g.add(hueco)
-        const aro = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.022, 12, 64), metal)
-        aro.position.set(x, 0, 0.14)
+        const aro = new THREE.Mesh(new THREE.TorusGeometry(0.465, 0.016, 12, 80), plata)
+        aro.position.set(x, 0, 0.168)
         g.add(aro)
         const rotor = new THREE.Group()
-        rotor.position.set(x, 0, 0.145)
-        for (let i = 0; i < 9; i++) {
+        rotor.position.set(x, 0, 0.152)
+        for (let i = 0; i < 11; i++) {
           const pivote = new THREE.Group()
-          pivote.rotation.z = (i / 9) * Math.PI * 2
-          const a = new THREE.Mesh(aspa, mat(0x24232c, 0.3, 0.55))
-          a.position.x = 0.25
-          a.rotation.x = 0.45
-          pivote.add(a)
+          pivote.rotation.z = (i / 11) * Math.PI * 2
+          const aspa = new THREE.Mesh(aspaGeo, aspaMat)
+          aspa.rotation.x = 0.38 // inclinación del aspa
+          pivote.add(aspa)
           rotor.add(pivote)
         }
-        const centro = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.04, 32), carcasa)
-        centro.rotation.x = Math.PI / 2
-        centro.position.z = 0.01
-        rotor.add(centro)
-        const punto = new THREE.Mesh(new THREE.CircleGeometry(0.045, 24), magenta)
-        punto.position.z = 0.032
-        rotor.add(punto)
+        const buje = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.12, 0.05, 48), carcasa)
+        buje.rotation.x = Math.PI / 2
+        buje.position.z = 0.012
+        rotor.add(buje)
+        const tapa = new THREE.Mesh(new THREE.CircleGeometry(0.085, 40), plata)
+        tapa.position.z = 0.038
+        rotor.add(tapa)
         g.add(rotor)
         this.ventiladores.push(rotor)
       }
 
-      // Chapa de conexiones (salidas de video)
-      const chapa = new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.28, 0.52), metal)
-      chapa.position.set(-1.47, -0.02, -0.05)
-      g.add(chapa)
+      // ---- Disipador: aletas de aluminio (instanciadas para que sea liviano) ----
+      const cantidadAletas = 120
+      const aletas = new THREE.InstancedMesh(new THREE.BoxGeometry(0.008, ALTO * 0.9, 0.16), aluminio, cantidadAletas)
+      const m = new THREE.Matrix4()
+      for (let i = 0; i < cantidadAletas; i++) {
+        m.makeTranslation(-LARGO / 2 + 0.12 + i * ((LARGO - 0.24) / (cantidadAletas - 1)), 0, -0.12)
+        aletas.setMatrixAt(i, m)
+      }
+      g.add(aletas)
+      // Heatpipes de cobre que asoman por arriba
       for (let i = 0; i < 4; i++) {
-        const puerto = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.09, 0.16), negro)
-        puerto.position.set(-1.49, 0.32 - i * 0.2, -0.08)
-        g.add(puerto)
+        const z = -0.17 + i * 0.035
+        const tubo = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, LARGO * 0.62, 16), cobre)
+        tubo.rotation.z = Math.PI / 2
+        tubo.position.set(-0.15 + i * 0.05, ALTO * 0.45 + 0.03, z)
+        g.add(tubo)
+        const codo = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.016, 10, 20, Math.PI / 2), cobre)
+        codo.position.set(-0.15 + i * 0.05 - LARGO * 0.31, ALTO * 0.45 - 0.03, z)
+        codo.rotation.z = Math.PI / 2
+        g.add(codo)
       }
 
-      // Conector PCI Express dorado y conector de energía
-      const pcie = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.12, 0.03), oro)
-      pcie.position.set(-0.55, -0.6, -0.17)
-      g.add(pcie)
-      const energia = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.12), negro)
-      energia.position.set(0.85, 0.6, -0.13)
-      g.add(energia)
+      // ---- PCB y backplate ----
+      const placaPcb = new THREE.Mesh(new THREE.BoxGeometry(LARGO * 0.94, ALTO * 0.98, 0.035), pcb)
+      placaPcb.position.set(-0.08, -0.02, -0.215)
+      g.add(placaPcb)
+      const backplate = new THREE.Mesh(new RoundedBoxGeometry(LARGO * 0.98, ALTO, 0.03, 3, 0.012), backplateMat)
+      backplate.position.set(0, 0, -0.25)
+      g.add(backplate)
+      // Ranuras de ventilación en el backplate
+      for (let i = 0; i < 9; i++) {
+        const ranura = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.01), negro)
+        ranura.position.set(0.85 + i * 0.065, 0.12, -0.268)
+        g.add(ranura)
+      }
 
-      g.position.x = 0.04
+      // ---- Chapa con las salidas de video ----
+      const chapa = new THREE.Mesh(new THREE.BoxGeometry(0.02, ALTO * 1.12, 0.62), plata)
+      chapa.position.set(-LARGO / 2 - 0.02, 0.0, -0.06)
+      g.add(chapa)
+      const salidas = [
+        { y: 0.36, alto: 0.08, ancho: 0.16 }, // DisplayPort
+        { y: 0.16, alto: 0.08, ancho: 0.16 }, // DisplayPort
+        { y: -0.04, alto: 0.08, ancho: 0.16 }, // DisplayPort
+        { y: -0.25, alto: 0.07, ancho: 0.2 } // HDMI
+      ]
+      for (const s of salidas) {
+        const marco = new THREE.Mesh(new THREE.BoxGeometry(0.026, s.alto + 0.02, s.ancho + 0.02), aluminio)
+        marco.position.set(-LARGO / 2 - 0.025, s.y, -0.12)
+        g.add(marco)
+        const boca = new THREE.Mesh(new THREE.BoxGeometry(0.03, s.alto, s.ancho), negro)
+        boca.position.set(-LARGO / 2 - 0.027, s.y, -0.12)
+        g.add(boca)
+      }
+      // Agujeros de ventilación de la chapa
+      for (let fila = 0; fila < 6; fila++) {
+        for (let col = 0; col < 2; col++) {
+          const agujero = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.05, 0.05), negro)
+          agujero.position.set(-LARGO / 2 - 0.022, 0.42 - fila * 0.13, 0.12 + col * 0.08)
+          g.add(agujero)
+        }
+      }
+
+      // ---- Conector PCI Express con contactos dorados ----
+      const peine = new THREE.Group()
+      for (let i = 0; i < 46; i++) {
+        const contacto = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.1, 0.038), oro)
+        contacto.position.x = i * 0.022 + (i > 10 ? 0.03 : 0)
+        peine.add(contacto)
+      }
+      peine.position.set(-1.25, -ALTO / 2 - 0.06, -0.215)
+      g.add(peine)
+
+      // ---- Dos conectores de energía de 8 pines ----
+      for (const x of [0.62, 0.86]) {
+        const conector = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.09, 0.1), plastico)
+        conector.position.set(x, ALTO / 2 + 0.035, -0.17)
+        g.add(conector)
+        for (let i = 0; i < 4; i++) {
+          for (let j = 0; j < 2; j++) {
+            const pin = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.03), negro)
+            pin.position.set(x - 0.066 + i * 0.044, ALTO / 2 + 0.081, -0.195 + j * 0.045)
+            g.add(pin)
+          }
+        }
+      }
+
+      // Centra la placa en el origen para que gire sobre su centro
+      const centro = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3())
+      g.children.forEach((c) => c.position.sub(centro))
       return g
     },
 
@@ -195,10 +277,14 @@ export default {
       const h = el.clientHeight
       this.renderer.setSize(w, h, false)
       this.camara.aspect = w / h
-      // Si el espacio es angosto se aleja la cámara para que entre la placa entera.
-      this.camara.position.z = w / h < 1.2 ? 6.6 : 5.0
+      // Distancia para que la esfera que envuelve la placa entre completa en cualquier ángulo.
+      const fovV = THREE.MathUtils.degToRad(this.camara.fov)
+      const fovH = 2 * Math.atan(Math.tan(fovV / 2) * this.camara.aspect)
+      const distancia = (this.radio * 1.06) / Math.sin(Math.min(fovV, fovH) / 2)
+      this.camara.position.set(0, 0, distancia)
+      this.camara.lookAt(0, 0, 0)
       this.camara.updateProjectionMatrix()
-      if (!this.cuadro) this.renderer.render(this.escena, this.camara)
+      this.renderer.render(this.escena, this.camara)
     },
 
     animar () {
@@ -206,18 +292,15 @@ export default {
       const paso = () => {
         if (!this.visible) { this.cuadro = 0; return }
         if (!this.arrastrando) {
-          // Inercia después de soltar y giro lento cuando nadie la toca
+          // Un poco de inercia al soltar, y después queda quieta
           this.giro.y += this.velocidad.y
-          this.giro.x += this.velocidad.x
-          this.velocidad.y *= 0.94
-          this.velocidad.x *= 0.94
-          if (!this.quieto && Math.abs(this.velocidad.y) < 0.002) this.giro.y += 0.0035
-          // Vuelve suave a una inclinación cómoda
-          this.giro.x += (0.3 - this.giro.x) * 0.02
+          this.giro.x = Math.max(-1, Math.min(1.1, this.giro.x + this.velocidad.x))
+          this.velocidad.y *= 0.9
+          this.velocidad.x *= 0.9
         }
         this.placa.rotation.y = this.giro.y
         this.placa.rotation.x = this.giro.x
-        if (!this.quieto) this.ventiladores.forEach((v) => { v.rotation.z -= 0.09 })
+        if (!this.quieto) this.ventiladores.forEach((v) => { v.rotation.z -= 0.08 })
         this.renderer.render(this.escena, this.camara)
         this.cuadro = requestAnimationFrame(paso)
       }
@@ -238,9 +321,9 @@ export default {
       const dx = e.clientX - this.ultimo.x
       const dy = e.clientY - this.ultimo.y
       this.ultimo = { x: e.clientX, y: e.clientY }
-      this.velocidad = { x: dy * 0.008, y: dx * 0.01 }
-      this.giro.y += dx * 0.01
-      this.giro.x = Math.max(-0.9, Math.min(1.2, this.giro.x + dy * 0.008))
+      this.velocidad = { x: dy * 0.006, y: dx * 0.008 }
+      this.giro.y += dx * 0.008
+      this.giro.x = Math.max(-1, Math.min(1.1, this.giro.x + dy * 0.006))
     },
     soltar () {
       this.arrastrando = false
@@ -254,14 +337,12 @@ export default {
 </script>
 
 <style scoped>
-.gpu3d { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.gpu3d__lienzo {
+.gpu3d {
   width: 100%;
-  height: 400px;
+  height: 420px;
   cursor: grab;
   user-select: none;
 }
-.gpu3d__lienzo.agarrando { cursor: grabbing; }
-.gpu3d__lienzo :deep(canvas) { display: block; width: 100% !important; height: 100% !important; }
-.gpu3d__ayuda { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--texto-2); }
+.gpu3d.agarrando { cursor: grabbing; }
+.gpu3d :deep(canvas) { display: block; width: 100% !important; height: 100% !important; }
 </style>
