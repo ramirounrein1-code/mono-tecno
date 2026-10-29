@@ -37,7 +37,6 @@
         :producto="p"
         :dolar="dolar"
         @agregar="agregarAlCarrito"
-        @comparar="comparar"
       />
     </transition-group>
 
@@ -55,7 +54,6 @@ import ProductCard from '../components/ProductCard.vue'
 import { obtenerProductos } from '../services/productosService'
 import { obtenerCotizaciones } from '../services/dolarService'
 import { agregar } from '../services/carrito'
-import { alternarComparacion, comparacion, MAX_COMPARAR } from '../services/comparar'
 import { CATEGORIAS, CONDICIONES } from '../data/productosIniciales'
 
 // Quita tildes y pasa a minúsculas para que la búsqueda sea más tolerante.
@@ -183,13 +181,6 @@ export default {
       this.marca = ''
       this.precioMin = null
       this.precioMax = null
-    },
-    // Comparar: agrega o saca el producto de la comparación y avisa.
-    comparar (producto) {
-      const r = alternarComparacion(producto.id)
-      const n = comparacion.ids.length
-      if (r === 'lleno') this.$emit('notificar', { mensaje: `Podés comparar hasta ${MAX_COMPARAR} productos. Sacá uno para sumar otro.`, tipo: 'info', accion: { texto: 'Ver comparación', to: '/comparar' } })
-      else if (r === 'agregado') this.$emit('notificar', { mensaje: n < 2 ? `Sumaste “${producto.nombre}”. Elegí otro para comparar.` : `Sumaste “${producto.nombre}” a la comparación.`, tipo: 'info', accion: n >= 2 ? { texto: 'Comparar', to: '/comparar' } : null })
     },
     agregarAlCarrito (producto) {
       if (agregar(producto)) this.$emit('notificar', { mensaje: `Agregaste “${producto.nombre}” al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })

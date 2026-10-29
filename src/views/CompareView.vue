@@ -7,7 +7,7 @@
 
     <div v-if="productos.length < 2" class="tarjeta vacio">
       <h2>{{ productos.length ? 'Falta un producto más' : 'Todavía no elegiste productos' }}</h2>
-      <p class="texto-sec">En el catálogo tocá el botón de comparar que está arriba a la derecha de cada foto. Podés elegir hasta 3.</p>
+      <p class="texto-sec">Entrá a un producto y, abajo de la ficha técnica, elegí con cuáles de su misma categoría querés compararlo.</p>
       <router-link :to="{ name: 'listado', query: { categoria: 'Placas de video' } }" class="btn btn--primario">Elegir placas de video</router-link>
     </div>
 
