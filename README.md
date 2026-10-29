@@ -50,47 +50,33 @@ npm run build      # versión de producción en /dist
 2. En Vercel: **Add New → Project** e importar el repositorio. Vercel detecta Vue CLI (build `npm run build`, salida `dist`).
 3. El archivo `vercel.json` redirige todas las rutas a `index.html`, así funcionan los links directos como `/productos/p04`.
 
-## Configurar la tienda antes de publicar
+## Accesos para probar
 
-Todos los datos del negocio están en `src/config/tienda.js`. Hay que completar lo que está entre [CORCHETES]:
+| Qué | Dónde | Datos |
+|---|---|---|
+| Cuenta de cliente | `/cuenta/ingresar` | `ramirounrein1@gmail.com` · contraseña `isec` |
+| Panel de administración | `/admin` (o desde "Mi cuenta" con la cuenta de arriba) | contraseña `isec` |
 
-- **Transferencia**: alias, CBU/CVU, titular y banco (se muestran al cliente al confirmar la compra).
-- **Mercado Pago**: pegar un *link de pago* (se crea gratis desde la app de Mercado Pago → "Link de pago"). Si queda vacío, la página le avisa al cliente que le mandan el link por mensaje.
-- **Envíos**: nombres y costos de cada forma de entrega.
-- **Descuentos**: porcentaje por transferencia y por efectivo.
-- WhatsApp, email y horarios.
+También se puede crear una cuenta nueva desde "Crear cuenta" o entrar con Google.
 
-> La página no procesa tarjetas por su cuenta: el pago con tarjeta se hace en el sitio de Mercado Pago, que es lo seguro. Para cobrar automáticamente (sin link manual) hace falta un pequeño servidor que cree el pago con la API de Mercado Pago.
+## Configuración de la tienda
+
+Todos los datos del negocio están centralizados en `src/config/tienda.js`: contacto (Instagram, WhatsApp, email, zona y horarios), formas de envío con su costo, medios de pago (link de Mercado Pago, datos de transferencia y descuentos), garantía, la huella de la contraseña del panel, la cuenta del dueño y el ID de cliente de Google. Cambiar un dato ahí lo actualiza en toda la página.
+
+El pago con tarjeta se hace en el sitio de Mercado Pago mediante un link de pago: la página no recibe ni guarda datos de tarjetas.
 
 ## Panel de administración
 
-- Se entra desde `/admin` (no hay links visibles en la tienda).
-- Contraseña de prueba: `isec`
-- Para cambiarla, generá el hash nuevo y reemplazá `ADMIN_HASH` en `src/config/tienda.js`:
-
-```bash
-node -e "const c=require('crypto');const k=c.pbkdf2Sync(process.argv[1],'monotecno-admin',210000,32,'sha256').toString('hex');console.log(c.createHash('sha256').update(k).digest('hex'))" "NUEVA-CONTRASEÑA"
-```
-
-- **Antes de publicar la tienda de verdad, cambiá `isec` por una contraseña larga** (12 caracteres o más): una contraseña corta se puede adivinar.
+- Se entra desde `/admin` (no hay links visibles en la tienda, salvo en "Mi cuenta" de la cuenta del dueño).
+- Permite dar de alta, editar y borrar productos (con foto subida o por link), controlar el stock y cambiar el estado de los pedidos.
+- La contraseña no está escrita en el código: solo se guarda una huella derivada con PBKDF2.
 - La sesión dura 8 horas, se cierra sola después de 30 minutos sin actividad y al cerrar el navegador. Después de 5 intentos fallidos se bloquea 30 segundos, y cada fallo extra duplica la espera (hasta 15 minutos). El bloqueo no se saltea recargando la página.
-- Importante: como la página no tiene servidor, la protección es del lado del navegador y los productos/pedidos se guardan en el navegador de quien los carga. Para varios administradores o pedidos centralizados hace falta un backend.
 
 ## Ingreso con Google
 
 El botón "Continuar con Google" usa **Google Identity Services** (la librería oficial). Google muestra su propia ventana para elegir la cuenta: la contraseña de Google nunca pasa por la página. Si el email ya tenía cuenta, se vincula; si no, se crea con el nombre y la foto de Google.
 
-Para activarlo hace falta un **ID de cliente** de Google (es gratis):
-
-1. Entrá a [console.cloud.google.com](https://console.cloud.google.com) y creá un proyecto (por ejemplo "mono-tecno").
-2. Andá a **APIs y servicios → Pantalla de consentimiento de OAuth**, elegí **Externo** y completá el nombre de la app, tu email y el logo.
-3. Andá a **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth**, tipo **Aplicación web**.
-4. En **Orígenes de JavaScript autorizados** agregá `http://localhost:8080` y la dirección de Vercel (`https://mono-tecno-tienda.vercel.app`).
-5. Copiá el ID (termina en `.apps.googleusercontent.com`) y cargalo de una de estas dos formas:
-   - En Vercel: **Settings → Environment Variables** → nombre `VUE_APP_GOOGLE_CLIENT_ID`, valor el ID. Después hacé **Redeploy**.
-   - O pegalo directo en `GOOGLE_CLIENT_ID` dentro de `src/config/tienda.js`.
-
-Sin el ID, el botón se ve igual pero avisa que falta configurarlo.
+La página usa un **ID de cliente OAuth** de Google Cloud (`GOOGLE_CLIENT_ID` en `src/config/tienda.js`), autorizado para `https://mono-tecno-tienda.vercel.app` y `http://localhost:8080`. Google solo acepta ingresos desde esas direcciones.
 
 ## Seguridad
 
@@ -116,7 +102,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | Links externos con `rel="noopener noreferrer"` | Que la página abierta controle la pestaña de la tienda o vea de dónde vino |
 | `/.well-known/security.txt` | Que quien encuentre un problema sepa cómo avisar |
 
-**Límite honesto:** sin un servidor, todo lo que se guarda vive en el navegador de cada persona. Para que los pedidos y las cuentas estén centralizados y protegidos del lado del servidor (y para verificar la firma del token de Google), el paso siguiente es un backend como Supabase.
+**Alcance:** sin un servidor, todo lo que se guarda vive en el navegador de cada persona. Para que los pedidos y las cuentas estén centralizados y protegidos del lado del servidor (y para verificar la firma del token de Google), el paso siguiente sería un backend como Supabase.
 
 ## Páginas (Vue Router)
 
