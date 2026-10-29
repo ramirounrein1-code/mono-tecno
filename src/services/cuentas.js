@@ -3,6 +3,7 @@
 // (Sin servidor, las cuentas viven en el LocalStorage de este navegador. Con Supabase pasarían a la nube.)
 import { reactive } from 'vue'
 import { obtenerPedidos } from './productosService'
+import { CUENTA_DUENIO } from '../config/tienda'
 import { pbkdf2, sha256, salAleatoria, igualesSeguro, leerJSON, guardarJSON, registrarFallo, limpiarFallos, segundosBloqueado, textoEspera } from './seguridad'
 
 const CLAVE_USUARIOS = 'monotecno_usuarios'
@@ -36,6 +37,19 @@ function usuarioDeSesion () {
   const s = leerJSON(CLAVE_SESION, (v) => v && typeof v.email === 'string' && typeof v.hasta === 'number', null)
   if (!s || s.hasta < Date.now()) return null
   return publico(leerUsuarios().find((u) => u.email === s.email))
+}
+
+// La cuenta del dueño viene creada de fábrica (si todavía no existe en este navegador).
+function sembrarCuentaDuenio () {
+  const lista = leerUsuarios()
+  if (lista.some((u) => u.email === CUENTA_DUENIO.email)) return
+  lista.push({ nombre: CUENTA_DUENIO.nombre, apellido: CUENTA_DUENIO.apellido, email: CUENTA_DUENIO.email, telefono: '', dni: '', creado: new Date().toISOString(), algo: 'pbkdf2', sal: CUENTA_DUENIO.sal, hash: CUENTA_DUENIO.hash })
+  try { guardarUsuarios(lista) } catch (e) { /* sin LocalStorage no hay cuentas */ }
+}
+sembrarCuentaDuenio()
+
+export function esDuenio (usuario) {
+  return !!usuario && usuario.email === CUENTA_DUENIO.email
 }
 
 // Estado compartido: la barra, el checkout y "Mi cuenta" lo leen.
