@@ -39,3 +39,9 @@ export function limpiarComparacion () {
   comparacion.ids = []
   guardar()
 }
+
+// Reemplaza la lista completa (la usa el detalle para comparar solo dentro de una categoría).
+export function fijarComparacion (ids) {
+  comparacion.ids = ids.slice(0, MAX_COMPARAR)
+  guardar()
+}
