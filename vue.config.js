@@ -6,6 +6,8 @@ const unSoloArchivo = !!process.env.VUE_APP_HASH
 
 module.exports = defineConfig({
   transpileDependencies: true,
+  // Sin mapas de código fuente en producción: no se publica el código original legible.
+  productionSourceMap: false,
   publicPath: unSoloArchivo ? './' : '/',
   pages: {
     index: {

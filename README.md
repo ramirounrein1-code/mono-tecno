@@ -13,7 +13,7 @@ SPA (Single Page Application) orientada a celulares para **mono.tecno**, un serv
 
 La app tiene dos partes:
 
-- **Cuentas de clientes**: registro, inicio de sesión y "Mi cuenta" con historial de pedidos; los datos se completan solos al comprar.
+- **Cuentas de clientes**: registro e inicio de sesión con email o **con Google**, y "Mi cuenta" con el historial de pedidos (cada pedido anterior se puede abrir, ver los datos de pago y "volver a comprar"); los datos se completan solos al comprar.
 - **Tienda**: catálogo con buscador, filtros y orden, detalle de cada producto, carrito y compra en 3 pasos (datos, entrega y pago) con Mercado Pago, transferencia o efectivo.
 - **Panel de administración** (`/admin`, con contraseña): alta, edición y baja de productos con foto (subida desde la computadora o por link), control de stock y pedidos con su estado.
 
@@ -22,7 +22,7 @@ Todo se guarda en **LocalStorage**, y la cotización del dólar se trae en vivo 
 Temática: **Catálogo de Productos**. Diseño basado en el estilo "Superhuman" de [Refero Styles](https://styles.refero.design/), con los colores del logo (azul noche `#0B0B2A` y magenta `#D63384`).
 
 **Deploy:** [URL DE VERCEL]
-**Repositorio:** [URL DE GITHUB]
+**Repositorio:** https://github.com/ramirounrein1-code/mono-tecno
 
 ## Tecnologías utilizadas
 
@@ -69,11 +69,54 @@ Todos los datos del negocio están en `src/config/tienda.js`. Hay que completar 
 - Para cambiarla, generá el hash nuevo y reemplazá `ADMIN_HASH` en `src/config/tienda.js`:
 
 ```bash
-node -e "console.log(require('crypto').createHash('sha256').update('monotecno:' + process.argv[1]).digest('hex'))" "NUEVA-CONTRASEÑA"
+node -e "const c=require('crypto');const k=c.pbkdf2Sync(process.argv[1],'monotecno-admin',210000,32,'sha256').toString('hex');console.log(c.createHash('sha256').update(k).digest('hex'))" "NUEVA-CONTRASEÑA"
 ```
 
-- La sesión dura 8 horas y se cierra al cerrar el navegador. Después de 3 intentos fallidos hay que esperar 30 segundos.
+- **Antes de publicar la tienda de verdad, cambiá `isec` por una contraseña larga** (12 caracteres o más): una contraseña corta se puede adivinar.
+- La sesión dura 8 horas, se cierra sola después de 30 minutos sin actividad y al cerrar el navegador. Después de 5 intentos fallidos se bloquea 30 segundos, y cada fallo extra duplica la espera (hasta 15 minutos). El bloqueo no se saltea recargando la página.
 - Importante: como la página no tiene servidor, la protección es del lado del navegador y los productos/pedidos se guardan en el navegador de quien los carga. Para varios administradores o pedidos centralizados hace falta un backend.
+
+## Ingreso con Google
+
+El botón "Continuar con Google" usa **Google Identity Services** (la librería oficial). Google muestra su propia ventana para elegir la cuenta: la contraseña de Google nunca pasa por la página. Si el email ya tenía cuenta, se vincula; si no, se crea con el nombre y la foto de Google.
+
+Para activarlo hace falta un **ID de cliente** de Google (es gratis):
+
+1. Entrá a [console.cloud.google.com](https://console.cloud.google.com) y creá un proyecto (por ejemplo "mono-tecno").
+2. Andá a **APIs y servicios → Pantalla de consentimiento de OAuth**, elegí **Externo** y completá el nombre de la app, tu email y el logo.
+3. Andá a **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth**, tipo **Aplicación web**.
+4. En **Orígenes de JavaScript autorizados** agregá `http://localhost:8080` y la dirección de Vercel (por ejemplo `https://mono-tecno.vercel.app`).
+5. Copiá el ID (termina en `.apps.googleusercontent.com`) y cargalo de una de estas dos formas:
+   - En Vercel: **Settings → Environment Variables** → nombre `VUE_APP_GOOGLE_CLIENT_ID`, valor el ID. Después hacé **Redeploy**.
+   - O pegalo directo en `GOOGLE_CLIENT_ID` dentro de `src/config/tienda.js`.
+
+Sin el ID, el botón se ve igual pero avisa que falta configurarlo.
+
+## Seguridad
+
+Lo que hace la página para que no la puedan atacar fácilmente:
+
+| Medida | Qué evita |
+|---|---|
+| Cabeceras de seguridad en `vercel.json` (Content-Security-Policy, X-Frame-Options, HSTS, nosniff, Referrer-Policy, Permissions-Policy) | Que se ejecute código de otros sitios, que la página se meta dentro de otra para engañar clics (clickjacking) y que se use sin HTTPS |
+| Contraseñas con **PBKDF2-SHA256** (210.000 vueltas) y sal aleatoria por usuario | Que alguien que vea los datos guardados pueda sacar las contraseñas. Las cuentas viejas (SHA-256) se actualizan solas al ingresar |
+| Límite de intentos guardado en el navegador (clientes y admin) | Probar contraseñas al azar |
+| Sesión del panel con una clave que solo se obtiene sabiendo la contraseña, comprobada en cada página | Entrar al panel escribiendo a mano una sesión falsa en el navegador |
+| Cierre automático del panel tras 30 min sin actividad (y máximo 8 h) | Que alguien use el panel en una compu que quedó abierta |
+| Contraseñas muy conocidas o que contienen el email no se aceptan al crear cuenta | Cuentas fáciles de adivinar |
+| Si se cierra la sesión en otra pestaña, todas se enteran | Pestañas que siguen mostrando datos de una sesión cerrada |
+| Mismo mensaje de error si el email existe o no | Averiguar qué emails tienen cuenta |
+| Comparación de hashes en tiempo constante | Pistas por el tiempo de respuesta |
+| Ingreso con Google validando destinatario, emisor, vencimiento y email verificado | Usar un token de Google de otra página o vencido |
+| Pedidos privados: solo los ve su dueño (o el admin) | Ver pedidos ajenos cambiando el número en la dirección |
+| Validación de los datos guardados al leerlos y filtro de imágenes (solo `https`, fotos del proyecto o fotos subidas) | Que datos manipulados rompan la página o metan links peligrosos |
+| Vue escapa todo el texto (no se usa `v-html`) y los campos tienen largo máximo | Inyección de código (XSS) desde formularios |
+| Sin source maps en producción y sesión de clientes con vencimiento (30 días) | Publicar el código original y sesiones eternas |
+| `robots.txt`, etiqueta `noindex` y `X-Robots-Tag` en el panel, cuenta, pedidos y checkout | Que esas páginas aparezcan en Google |
+| Links externos con `rel="noopener noreferrer"` | Que la página abierta controle la pestaña de la tienda o vea de dónde vino |
+| `/.well-known/security.txt` | Que quien encuentre un problema sepa cómo avisar |
+
+**Límite honesto:** sin un servidor, todo lo que se guarda vive en el navegador de cada persona. Para que los pedidos y las cuentas estén centralizados y protegidos del lado del servidor (y para verificar la firma del token de Google), el paso siguiente es un backend como Supabase.
 
 ## Páginas (Vue Router)
 
@@ -109,13 +152,13 @@ node -e "console.log(require('crypto').createHash('sha256').update('monotecno:' 
 | **Formularios con v-model** | Registro e inicio de sesión de clientes, Mi cuenta, alta/edición de producto, checkout (datos, entrega y pago) e ingreso al panel |
 | **Validaciones personalizadas** | Obligatorios; longitud mínima (nombre, apellido, calle, localidad, descripción); formatos: email, DNI de 7 u 8 números, teléfono de 8 a 13 números, código postal (1714 o B1714ABC), SKU `MT-0000`, precio entero, stock entero, link https a imagen, foto JPG/PNG/WEBP de hasta 5 MB; SKU no repetido; efectivo solo con retiro; aceptar condiciones |
 | **Mensajes de error visibles** | Debajo de cada campo + resumen al enviar; el foco va al primer campo con error |
-| **LocalStorage** | Productos, carrito, pedidos, cuentas de clientes (contraseña guardada como hash SHA-256 con sal), datos del cliente para la próxima compra y caché de la cotización (30 min). La sesión del admin va en sessionStorage |
+| **LocalStorage** | Productos, carrito, pedidos, cuentas de clientes (contraseña guardada como hash PBKDF2 con sal), límite de intentos de ingreso, datos del cliente para la próxima compra y caché de la cotización (30 min). La sesión del admin va en sessionStorage |
 | **Consumo de API con Fetch** | `services/dolarService.js` → `DolarWidget.vue` (Inicio) y precio aproximado en USD en tarjetas, detalle y carrito |
 | **Responsive** | Mobile-first; 2 productos por fila en celular; probado en 390 px, 768 px y 1366 px |
 | **Transición Vue** | Cambio de página (`App.vue`), modal, aviso (toast), contador del carrito, pestañas del panel, campo de dirección |
 | **transition-group** | Grilla del catálogo al filtrar/ordenar, destacados, filas del carrito, tabla del panel, cotizaciones |
 
-### Componentes reutilizables (13)
+### Componentes reutilizables (14)
 
 | Componente | Props | Emits |
 |---|---|---|
@@ -132,6 +175,7 @@ node -e "console.log(require('crypto').createHash('sha256').update('monotecno:' 
 | `MediosDePago` | `compacto` | — |
 | `BottomNav` | — | — (barra inferior estilo app en celular) |
 | `LogoParticles` | `src`, `descripcion`, `color`, `separacion`, `radioInfluencia` | — |
+| `GoogleButton` | `texto` | `ingreso`, `error` |
 
 Además, las vistas emiten `notificar` hacia `App.vue`, que muestra el aviso.
 
@@ -175,11 +219,11 @@ mono-tecno/
 ├── public/              index.html, favicon
 ├── src/
 │   ├── assets/          logos, fotos de productos (productos/*.webp) y estilos globales
-│   ├── components/      13 componentes reutilizables
+│   ├── components/      14 componentes reutilizables
 │   ├── data/            productos iniciales, categorías y créditos de fotos
 │   ├── router/          rutas (Vue Router)
 │   ├── config/          datos de la tienda: envíos, medios de pago, contraseña del panel
-│   ├── services/        productosService (LocalStorage), carrito, cuentas, precios, auth, imagenes, dolarService (Fetch)
+│   ├── services/        productosService (LocalStorage), carrito, cuentas, google (ingreso con Google), seguridad, precios, auth, imagenes, dolarService (Fetch)
 │   ├── views/           Inicio, Catálogo, Detalle, Carrito, Checkout, Pedido, Cuenta (ingresar/registro), Mi cuenta, Acerca de, Login admin, Admin, Alta/Edición, 404
 │   ├── App.vue
 │   └── main.js
@@ -191,17 +235,25 @@ mono-tecno/
 
 ## Capturas de pantalla
 
-| Inicio | Catálogo | Catálogo (celular) |
+| Inicio | Catálogo | Detalle de producto |
 |---|---|---|
-| ![Inicio](docs/capturas/inicio.png) | ![Catálogo](docs/capturas/catalogo.png) | ![Catálogo celular](docs/capturas/catalogo-mobile.png) |
+| ![Inicio](docs/capturas/inicio.png) | ![Catálogo](docs/capturas/catalogo.png) | ![Detalle](docs/capturas/detalle.png) |
 
-| Checkout | Pedido confirmado | Ingreso al panel |
+| Catálogo (celular) | Catálogo (tablet) | Panel (celular) |
 |---|---|---|
-| ![Checkout](docs/capturas/checkout.png) | ![Pedido](docs/capturas/pedido.png) | ![Login](docs/capturas/login.png) |
+| ![Catálogo celular](docs/capturas/catalogo-mobile.png) | ![Catálogo tablet](docs/capturas/catalogo-tablet.png) | ![Admin mobile](docs/capturas/admin-mobile.png) |
 
-| Panel de administración | Alta de producto | Panel (celular) |
+| Checkout con validaciones | Pedido confirmado | Crear cuenta |
 |---|---|---|
-| ![Admin](docs/capturas/admin.png) | ![Alta](docs/capturas/admin-alta.png) | ![Admin mobile](docs/capturas/admin-mobile.png) |
+| ![Checkout](docs/capturas/checkout.png) | ![Pedido](docs/capturas/pedido.png) | ![Crear cuenta](docs/capturas/cuenta-registro.png) |
+
+| Ingreso al panel | Panel de administración | Alta de producto con errores |
+|---|---|---|
+| ![Login](docs/capturas/login.png) | ![Admin](docs/capturas/admin.png) | ![Alta](docs/capturas/admin-alta.png) |
+
+| Nosotros (Acerca de) |
+|---|
+| ![Nosotros](docs/capturas/nosotros.png) |
 
 ## Notas
 
