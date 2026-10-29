@@ -32,6 +32,7 @@ Temática: **Catálogo de Productos**. Diseño basado en el estilo "Superhuman" 
 - LocalStorage
 - Fetch API → [DolarAPI](https://dolarapi.com)
 - Canvas API (logo de puntitos interactivo y achicado de fotos subidas)
+- three.js (placa de video 3D en Nosotros, se carga solo en esa página y solo en computadora)
 - HTML5 + CSS3 (mobile-first, sin frameworks de CSS)
 
 ## Instrucciones de instalación
@@ -157,7 +158,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | **Extras** | Comparador de productos (en el detalle: "Compará con otras…" de la misma categoría; tabla en `/comparar` + barra flotante `CompareBar`), asistente Armá tu PC con chequeo de compatibilidad (`services/armado.js`: tipo de memoria, potencia de la fuente, socket del cooler, gráficos integrados) y modo oscuro (botón en el encabezado, sigue al sistema si no elegís) |
 | **transition-group** | Grilla del catálogo al filtrar/ordenar, destacados, filas del carrito, tabla del panel, cotizaciones |
 
-### Componentes reutilizables (15)
+### Componentes reutilizables (16)
 
 | Componente | Props | Emits |
 |---|---|---|
@@ -176,6 +177,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | `LogoParticles` | `src`, `descripcion`, `color`, `separacion`, `radioInfluencia` | — |
 | `GoogleButton` | `texto` | `ingreso`, `error` |
 | `CompareBar` | — | — (barra flotante con los productos elegidos para comparar) |
+| `GpuModel3D` | — | — (placa de video en 3D con three.js en Nosotros, se gira con el mouse; solo en computadora) |
 
 Además, las vistas emiten `notificar` hacia `App.vue`, que muestra el aviso.
 
@@ -219,7 +221,7 @@ mono-tecno/
 ├── public/              index.html, favicon
 ├── src/
 │   ├── assets/          logos, fotos de productos (productos/*.webp) y estilos globales
-│   ├── components/      15 componentes reutilizables
+│   ├── components/      16 componentes reutilizables
 │   ├── data/            productos iniciales, categorías y créditos de fotos
 │   ├── router/          rutas (Vue Router)
 │   ├── config/          datos de la tienda: envíos, medios de pago, contraseña del panel
