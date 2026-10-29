@@ -25,6 +25,7 @@ export default {
       botones: [
         { to: '/', etiqueta: 'Inicio', exacto: true, relleno: true, icono: 'M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z' },
         { to: '/productos', etiqueta: 'Catálogo', relleno: false, icono: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
+        { to: '/acerca', etiqueta: 'Nosotros', relleno: false, icono: 'M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0a3 3 0 0 0 6 0a3 3 0 0 0 6 0V9M5 13v8h14v-8M10 21v-5h4v5' },
         { to: '/carrito', etiqueta: 'Carrito', relleno: false, icono: 'M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6.2M10 20.5h.01M17 20.5h.01' },
         { to: '/cuenta', etiqueta: 'Cuenta', relleno: true, icono: 'M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0z' }
       ]
@@ -54,7 +55,7 @@ export default {
   bottom: 0;
   z-index: 60;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-right, 0px));
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(14px);
