@@ -104,6 +104,16 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 
 **Alcance:** sin un servidor, todo lo que se guarda vive en el navegador de cada persona. Para que los pedidos y las cuentas estén centralizados y protegidos del lado del servidor (y para verificar la firma del token de Google), el paso siguiente sería un backend como Supabase.
 
+## Posicionamiento en Google (SEO)
+
+| Técnica | Dónde |
+|---|---|
+| Título y descripción propios en cada página, link canónico y `robots` (las páginas privadas no se indexan) | `services/seo.js`, llamado desde el router y desde el detalle de producto |
+| Datos estructurados (JSON-LD): la tienda como negocio local en Ituzaingó (`ComputerStore`) y cada producto con precio, stock y estado (`Product` + `Offer`) | `public/index.html` y `services/seo.js` |
+| Vista previa al compartir el link en WhatsApp, Instagram y redes (Open Graph + Twitter Card) | `public/index.html` y `public/og-imagen.jpg` |
+| Mapa del sitio con todas las páginas y productos | `public/sitemap.xml` (declarado en `public/robots.txt`) |
+| Contenido de respaldo para buscadores que no ejecutan JavaScript | `<noscript>` en `public/index.html` |
+
 ## Páginas (Vue Router)
 
 | Ruta | Página |
