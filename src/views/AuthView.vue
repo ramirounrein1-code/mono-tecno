@@ -12,16 +12,21 @@
         <form v-if="modo === 'ingresar'" key="ingresar" class="auth__form" novalidate @submit.prevent="ingresar">
           <h1>Hola de nuevo</h1>
           <p class="texto-sec">Ingresá para ver tus pedidos y comprar más rápido.</p>
+          <GoogleButton :texto="'signin_with'" @ingreso="conGoogle" @error="errorGoogle" />
+          <div class="auth__o" aria-hidden="true"><span>o con tu email</span></div>
           <div class="campo">
             <label for="a-email">Email</label>
-            <input id="a-email" v-model.trim="login.email" type="email" autocomplete="email" :aria-invalid="!!errores.email" aria-describedby="ae-email" @blur="validar('email')">
+            <input id="a-email" v-model.trim="login.email" type="email" maxlength="254" autocomplete="email" :aria-invalid="!!errores.email" aria-describedby="ae-email" @blur="validar('email')">
             <p v-if="errores.email" id="ae-email" class="campo__error">{{ errores.email }}</p>
           </div>
           <div class="campo">
             <label for="a-pass">Contraseña</label>
             <div class="campo__pass">
-              <input id="a-pass" v-model="login.contrasena" :type="ver ? 'text' : 'password'" autocomplete="current-password" :aria-invalid="!!errores.contrasena" aria-describedby="ae-pass" @blur="validar('contrasena')">
-              <button type="button" class="campo__ver" :aria-label="ver ? 'Ocultar contraseña' : 'Mostrar contraseña'" @click="ver = !ver">{{ ver ? 'Ocultar' : 'Ver' }}</button>
+              <input id="a-pass" v-model="login.contrasena" maxlength="128" :type="ver ? 'text' : 'password'" autocomplete="current-password" :aria-invalid="!!errores.contrasena" aria-describedby="ae-pass" @blur="validar('contrasena')">
+              <button type="button" class="campo__ver" :aria-label="ver ? 'Ocultar contraseña' : 'Mostrar contraseña'" :aria-pressed="ver" @click="ver = !ver">
+                <svg v-if="!ver" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+                <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6C3.7 8.5 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="M2 2l20 20" /></svg>
+              </button>
             </div>
             <p v-if="errores.contrasena" id="ae-pass" class="campo__error">{{ errores.contrasena }}</p>
           </div>
@@ -34,33 +39,38 @@
         <form v-else key="registro" class="auth__form" novalidate @submit.prevent="crearCuenta">
           <h1>Creá tu cuenta</h1>
           <p class="texto-sec">Guardamos tus datos para la próxima compra y podés seguir tus pedidos.</p>
+          <GoogleButton :texto="'signup_with'" @ingreso="conGoogle" @error="errorGoogle" />
+          <div class="auth__o" aria-hidden="true"><span>o con tu email</span></div>
           <div class="auth__fila">
             <div class="campo">
               <label for="r-nombre">Nombre *</label>
-              <input id="r-nombre" v-model.trim="reg.nombre" type="text" autocomplete="given-name" :aria-invalid="!!errores.nombre" aria-describedby="re-nombre" @blur="validar('nombre')">
+              <input id="r-nombre" v-model.trim="reg.nombre" type="text" maxlength="40" autocomplete="given-name" :aria-invalid="!!errores.nombre" aria-describedby="re-nombre" @blur="validar('nombre')">
               <p v-if="errores.nombre" id="re-nombre" class="campo__error">{{ errores.nombre }}</p>
             </div>
             <div class="campo">
               <label for="r-apellido">Apellido *</label>
-              <input id="r-apellido" v-model.trim="reg.apellido" type="text" autocomplete="family-name" :aria-invalid="!!errores.apellido" aria-describedby="re-apellido" @blur="validar('apellido')">
+              <input id="r-apellido" v-model.trim="reg.apellido" type="text" maxlength="40" autocomplete="family-name" :aria-invalid="!!errores.apellido" aria-describedby="re-apellido" @blur="validar('apellido')">
               <p v-if="errores.apellido" id="re-apellido" class="campo__error">{{ errores.apellido }}</p>
             </div>
           </div>
           <div class="campo">
             <label for="r-email">Email *</label>
-            <input id="r-email" v-model.trim="reg.email" type="email" autocomplete="email" :aria-invalid="!!errores.regEmail" aria-describedby="re-email" @blur="validar('regEmail')">
+            <input id="r-email" v-model.trim="reg.email" type="email" maxlength="254" autocomplete="email" :aria-invalid="!!errores.regEmail" aria-describedby="re-email" @blur="validar('regEmail')">
             <p v-if="errores.regEmail" id="re-email" class="campo__error">{{ errores.regEmail }}</p>
           </div>
           <div class="campo">
             <label for="r-tel">Teléfono / WhatsApp *</label>
-            <input id="r-tel" v-model.trim="reg.telefono" type="tel" inputmode="tel" autocomplete="tel" placeholder="11 2345-6789" :aria-invalid="!!errores.telefono" aria-describedby="re-tel" @blur="validar('telefono')">
+            <input id="r-tel" v-model.trim="reg.telefono" type="tel" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="11 2345-6789" :aria-invalid="!!errores.telefono" aria-describedby="re-tel" @blur="validar('telefono')">
             <p v-if="errores.telefono" id="re-tel" class="campo__error">{{ errores.telefono }}</p>
           </div>
           <div class="campo">
             <label for="r-pass">Contraseña * <span class="campo__ayuda">Mínimo 8 caracteres, con letras y números</span></label>
             <div class="campo__pass">
-              <input id="r-pass" v-model="reg.contrasena" :type="ver ? 'text' : 'password'" autocomplete="new-password" :aria-invalid="!!errores.regContrasena" aria-describedby="re-pass re-fuerza" @blur="validar('regContrasena')">
-              <button type="button" class="campo__ver" :aria-label="ver ? 'Ocultar contraseña' : 'Mostrar contraseña'" @click="ver = !ver">{{ ver ? 'Ocultar' : 'Ver' }}</button>
+              <input id="r-pass" v-model="reg.contrasena" maxlength="128" :type="ver ? 'text' : 'password'" autocomplete="new-password" :aria-invalid="!!errores.regContrasena" aria-describedby="re-pass re-fuerza" @blur="validar('regContrasena')">
+              <button type="button" class="campo__ver" :aria-label="ver ? 'Ocultar contraseña' : 'Mostrar contraseña'" :aria-pressed="ver" @click="ver = !ver">
+                <svg v-if="!ver" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+                <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6C3.7 8.5 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="M2 2l20 20" /></svg>
+              </button>
             </div>
             <div v-if="reg.contrasena" id="re-fuerza" class="fuerza" :data-nivel="fuerza.nivel">
               <span class="fuerza__barra"><span :style="{ width: fuerza.nivel * 25 + '%' }"></span></span>
@@ -70,7 +80,7 @@
           </div>
           <div class="campo">
             <label for="r-pass2">Repetí la contraseña *</label>
-            <input id="r-pass2" v-model="reg.confirmacion" :type="ver ? 'text' : 'password'" autocomplete="new-password" :aria-invalid="!!errores.confirmacion" aria-describedby="re-pass2" @blur="validar('confirmacion')">
+            <input id="r-pass2" v-model="reg.confirmacion" maxlength="128" :type="ver ? 'text' : 'password'" autocomplete="new-password" :aria-invalid="!!errores.confirmacion" aria-describedby="re-pass2" @blur="validar('confirmacion')">
             <p v-if="errores.confirmacion" id="re-pass2" class="campo__error">{{ errores.confirmacion }}</p>
           </div>
           <label class="check">
@@ -88,12 +98,15 @@
 </template>
 
 <script>
-import { registrar, iniciarSesion, emailRegistrado } from '../services/cuentas'
+import { registrar, iniciarSesion, emailRegistrado, ingresarConGoogle } from '../services/cuentas'
+import GoogleButton from '../components/GoogleButton.vue'
+import { contrasenaComun } from '../services/seguridad'
 
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export default {
   name: 'AuthView',
+  components: { GoogleButton },
   emits: ['notificar'],
   data () {
     return {
@@ -165,6 +178,8 @@ export default {
           if (!r.contrasena) return 'Elegí una contraseña.'
           if (r.contrasena.length < 8) return 'Tiene que tener al menos 8 caracteres.'
           if (!/[a-zA-Z]/.test(r.contrasena) || !/\d/.test(r.contrasena)) return 'Tiene que tener letras y números.'
+          if (contrasenaComun(r.contrasena)) return 'Esa contraseña es muy conocida y fácil de adivinar. Elegí otra.'
+          if (r.email && r.contrasena.toLowerCase().includes(r.email.split('@')[0].toLowerCase()) && r.email.split('@')[0].length >= 4) return 'No uses tu email como parte de la contraseña.'
           return ''
         case 'confirmacion':
           if (!r.confirmacion) return 'Repetí la contraseña.'
@@ -187,6 +202,18 @@ export default {
     volver () {
       const destino = this.$route.query.redirect
       this.$router.replace(typeof destino === 'string' && destino.startsWith('/') && !destino.startsWith('//') ? destino : { name: 'cuenta' })
+    },
+    conGoogle (perfil) {
+      try {
+        const { usuario, nuevo } = ingresarConGoogle(perfil)
+        this.$emit('notificar', { mensaje: nuevo ? `¡Bienvenido/a, ${usuario.nombre}! Completá tu teléfono en Mi cuenta para comprar más rápido.` : `¡Hola, ${usuario.nombre}!` })
+        this.volver()
+      } catch (e) {
+        this.errorGeneral = e.message
+      }
+    },
+    errorGoogle (mensaje) {
+      this.errorGeneral = mensaje
     },
     async ingresar () {
       this.errorGeneral = ''
@@ -229,6 +256,8 @@ export default {
 .auth__tabs a.activa { color: var(--texto); font-weight: 600; border-bottom-color: var(--magenta); }
 .auth__form { display: flex; flex-direction: column; gap: 14px; }
 .auth__form h1 { font-size: 28px; }
+.auth__o { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--texto-2); }
+.auth__o::before, .auth__o::after { content: ''; flex: 1; height: 1px; background: var(--borde); }
 .auth__form > p { margin: 0; }
 .auth__fila { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -249,7 +278,8 @@ export default {
 [aria-invalid="true"] { border-color: var(--error) !important; background: #fff5f4 !important; }
 .campo__pass { position: relative; }
 .campo__pass input { padding-right: 76px; }
-.campo__ver { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); min-height: 44px; min-width: 52px; padding: 0 12px; border: 0; background: transparent; font: inherit; font-size: 13px; color: var(--magenta-texto); cursor: pointer; }
+.campo__ver { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 10px; border: 0; background: transparent; font: inherit; color: var(--texto-2); cursor: pointer; }
+.campo__ver:hover, .campo__ver[aria-pressed="true"] { color: var(--texto); }
 .campo__error { margin: 0; font-size: 13px; color: var(--error); }
 .campo__error::before { content: '⚠ '; }
 .fuerza { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--texto-2); }

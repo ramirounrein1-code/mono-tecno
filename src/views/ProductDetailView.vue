@@ -36,7 +36,7 @@
             <button type="button" class="btn btn--primario" @click="agregarAlCarrito">Agregar al carrito</button>
           </div>
           <p v-else-if="producto.stock > 0" class="detalle__aviso">Ya tenés todas las unidades disponibles en tu carrito. <router-link to="/carrito">Ver carrito</router-link></p>
-          <a v-else class="btn btn--fantasma" href="https://instagram.com/mono.tecno" target="_blank" rel="noopener">Avisame cuando vuelva (Instagram)</a>
+          <a v-else class="btn btn--fantasma" href="https://instagram.com/mono.tecno" target="_blank" rel="noopener noreferrer">Avisame cuando vuelva (Instagram)</a>
         </div>
 
         <p class="detalle__desc">{{ producto.descripcion }}</p>

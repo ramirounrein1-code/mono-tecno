@@ -8,8 +8,11 @@
       <div class="campo">
         <label for="l-pass">Contraseña</label>
         <div class="campo__pass">
-          <input id="l-pass" ref="pass" v-model="contrasena" :type="ver ? 'text' : 'password'" autocomplete="current-password" :aria-invalid="!!error" aria-describedby="l-error" :disabled="cargando">
-          <button type="button" class="campo__ver" :aria-label="ver ? 'Ocultar contraseña' : 'Mostrar contraseña'" @click="ver = !ver">{{ ver ? 'Ocultar' : 'Ver' }}</button>
+          <input id="l-pass" ref="pass" v-model="contrasena" :type="ver ? 'text' : 'password'" autocomplete="current-password" maxlength="128" :aria-invalid="!!error" aria-describedby="l-error" :disabled="cargando">
+          <button type="button" class="campo__ver" :aria-label="ver ? 'Ocultar contraseña' : 'Mostrar contraseña'" :aria-pressed="ver" @click="ver = !ver">
+                <svg v-if="!ver" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+                <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.9 3.9M6.6 6.6C3.7 8.5 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="M2 2l20 20" /></svg>
+              </button>
         </div>
         <transition name="aviso">
           <p v-if="error" id="l-error" class="campo__error" role="alert">{{ error }}</p>
@@ -26,21 +29,38 @@
 
 <script>
 import logo from '../assets/logo-circulo.png'
-import { iniciarSesion } from '../services/auth'
+import { iniciarSesion, segundosBloqueadoAdmin } from '../services/auth'
+import { textoEspera } from '../services/seguridad'
 
 export default {
   name: 'LoginView',
   emits: ['notificar'],
   data () {
-    return { logo, contrasena: '', ver: false, error: '', cargando: false, intentos: 0, bloqueadoHasta: 0, ahora: Date.now(), reloj: null }
+    return { logo, contrasena: '', ver: false, error: '', cargando: false, bloqueadoHasta: 0, ahora: Date.now(), reloj: null }
   },
   mounted () {
+    // El bloqueo por intentos se guarda en el navegador: recargar la página no lo saltea.
+    this.bloquear(segundosBloqueadoAdmin())
     this.$refs.pass.focus()
   },
   beforeUnmount () {
     clearInterval(this.reloj)
   },
   methods: {
+    bloquear (segundos) {
+      if (!segundos) return
+      this.bloqueadoHasta = Date.now() + segundos * 1000
+      this.ahora = Date.now()
+      this.error = `Demasiados intentos. Esperá ${textoEspera(segundos)}.`
+      clearInterval(this.reloj)
+      this.reloj = setInterval(() => {
+        this.ahora = Date.now()
+        if (this.ahora >= this.bloqueadoHasta) {
+          clearInterval(this.reloj)
+          this.error = ''
+        }
+      }, 500)
+    },
     async entrar () {
       this.error = ''
       if (!this.contrasena) {
@@ -52,7 +72,7 @@ export default {
         return
       }
       this.cargando = true
-      const ok = await iniciarSesion(this.contrasena)
+      const { ok, espera } = await iniciarSesion(this.contrasena)
       this.cargando = false
       if (ok) {
         this.$emit('notificar', { mensaje: 'Entraste al panel de administración.' })
@@ -60,19 +80,9 @@ export default {
         this.$router.replace(typeof destino === 'string' && destino.startsWith('/admin') ? destino : { name: 'admin' })
         return
       }
-      this.intentos++
       this.contrasena = ''
       this.error = 'Contraseña incorrecta.'
-      // Después de 3 intentos fallidos, espera 30 segundos.
-      if (this.intentos % 3 === 0) {
-        this.bloqueadoHasta = Date.now() + 30000
-        clearInterval(this.reloj)
-        this.reloj = setInterval(() => {
-          this.ahora = Date.now()
-          if (this.ahora >= this.bloqueadoHasta) clearInterval(this.reloj)
-        }, 500)
-        this.error = 'Demasiados intentos. Esperá 30 segundos.'
-      }
+      this.bloquear(espera)
       this.$nextTick(() => this.$refs.pass.focus())
     }
   }
@@ -101,7 +111,8 @@ export default {
 }
 .campo__pass input:focus { border-color: var(--navy); background: var(--papel); outline: none; box-shadow: 0 0 0 3px rgba(214, 51, 132, 0.25); }
 [aria-invalid="true"] { border-color: var(--error) !important; background: #fff5f4 !important; }
-.campo__ver { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); min-height: 44px; min-width: 52px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: var(--magenta-texto); cursor: pointer; }
+.campo__ver { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; font: inherit; color: var(--texto-2); cursor: pointer; }
+.campo__ver:hover, .campo__ver[aria-pressed="true"] { color: var(--texto); }
 .campo__error { margin: 0; font-size: 13px; color: var(--error); }
 .campo__error::before { content: '⚠ '; }
 .login__volver { align-self: center; min-height: 44px; display: inline-flex; align-items: center; font-size: 14px; }

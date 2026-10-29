@@ -1,13 +1,22 @@
 <template>
   <div class="contenedor pedido">
-    <div v-if="!pedido" class="tarjeta vacio">
+    <div v-if="!cargado" class="pedido__cargando" aria-busy="true"></div>
+    <div v-else-if="!pedido" class="tarjeta vacio">
       <h1>No encontramos ese pedido</h1>
       <p class="texto-sec">Si ya hiciste la compra, escribinos por Instagram con tu nombre.</p>
       <router-link to="/" class="btn btn--primario">Ir al inicio</router-link>
     </div>
 
     <template v-else>
-      <header class="pedido__cabecera">
+      <router-link v-if="hayCuenta && !esNuevo" to="/cuenta" class="pedido__volver">← Mis pedidos</router-link>
+      <header v-if="!esNuevo" class="pedido__cabecera">
+        <div>
+          <h1>Pedido #{{ pedido.numero }}</h1>
+          <p class="texto-sec">{{ fechaLarga }} · Estado: <span class="chip">{{ pedido.estado }}</span></p>
+        </div>
+        <button type="button" class="btn btn--primario pedido__repetir" @click="volverAComprar">Volver a comprar</button>
+      </header>
+      <header v-else class="pedido__cabecera">
         <span class="pedido__ok" aria-hidden="true">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
         </span>
@@ -24,7 +33,7 @@
 
           <template v-if="pedido.pago === 'mercadoPago'">
             <p>Pagá <strong>{{ pesos(pedido.total) }}</strong> con tarjeta de crédito, débito o dinero en cuenta en el sitio seguro de Mercado Pago.</p>
-            <a v-if="linkMP" :href="linkMP" target="_blank" rel="noopener" class="btn btn--primario pago__btn">Pagar con Mercado Pago</a>
+            <a v-if="linkMP" :href="linkMP" target="_blank" rel="noopener noreferrer" class="btn btn--primario pago__btn">Pagar con Mercado Pago</a>
             <p v-else class="pago__aviso">En unos minutos te mandamos el link de pago por WhatsApp o Instagram al {{ pedido.cliente.telefono }}.</p>
             <p class="texto-sec pago__nota">Cuando se acredite el pago te escribimos para coordinar la entrega.</p>
           </template>
@@ -40,14 +49,14 @@
                 </dd>
               </div>
             </dl>
-            <a :href="linkInstagram" target="_blank" rel="noopener" class="btn btn--primario pago__btn">Enviar comprobante por Instagram</a>
+            <a :href="linkInstagram" target="_blank" rel="noopener noreferrer" class="btn btn--primario pago__btn">Enviar comprobante por Instagram</a>
             <p class="texto-sec pago__nota">Tenés 48 h para transferir. Después de ese plazo los productos vuelven a estar a la venta.</p>
           </template>
 
           <template v-else>
             <p>Pagás <strong>{{ pesos(pedido.total) }}</strong> en efectivo cuando retirás en {{ zona }}.</p>
             <p class="texto-sec pago__nota">Te escribimos al {{ pedido.cliente.telefono }} para coordinar día y horario ({{ horarios }}).</p>
-            <a :href="linkInstagram" target="_blank" rel="noopener" class="btn btn--fantasma pago__btn">Escribirnos por Instagram</a>
+            <a :href="linkInstagram" target="_blank" rel="noopener noreferrer" class="btn btn--fantasma pago__btn">Escribirnos por Instagram</a>
           </template>
         </section>
 
@@ -86,16 +95,21 @@
 import { obtenerPedido } from '../services/productosService'
 import { formatearPesos } from '../services/dolarService'
 import { TIENDA } from '../config/tienda'
-import { sesion } from '../services/cuentas'
+import { sesion, puedeVerPedido } from '../services/cuentas'
+import { obtenerProducto } from '../services/productosService'
+import { agregar } from '../services/carrito'
+import { estaLogueado } from '../services/auth'
 
 export default {
   name: 'OrderView',
   props: {
     numero: { type: String, required: true }
   },
+  emits: ['notificar'],
   data () {
     return {
       pedido: null,
+      cargado: false,
       copiado: '',
       linkMP: TIENDA.pagos.mercadoPago.link,
       zona: TIENDA.zona,
@@ -106,6 +120,13 @@ export default {
   computed: {
     hayCuenta () {
       return !!sesion.usuario
+    },
+    // Recién comprado (viene del checkout): se muestra el "¡Gracias!". Si no, es un pedido anterior.
+    esNuevo () {
+      return this.$route.query.nuevo === '1'
+    },
+    fechaLarga () {
+      return new Date(this.pedido.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     },
     tituloPago () {
       return { mercadoPago: 'Pagá con Mercado Pago', transferencia: 'Datos para la transferencia', efectivo: 'Pago en efectivo al retirar' }[this.pedido.pago]
@@ -131,11 +152,31 @@ export default {
       ].join('\n')
     }
   },
-  created () {
-    this.pedido = obtenerPedido(this.numero)
+  async created () {
+    const p = obtenerPedido(this.numero)
+    // Privacidad: solo ve el pedido su dueño (o el admin). A cualquier otro le decimos que no existe.
+    this.pedido = puedeVerPedido(p, await estaLogueado()) ? p : null
+    this.cargado = true
   },
   methods: {
     pesos (v) { return formatearPesos(v) },
+    // Agrega al carrito los productos de este pedido que sigan con stock.
+    volverAComprar () {
+      let agregados = 0
+      const sinStock = []
+      this.pedido.items.forEach((i) => {
+        const prod = obtenerProducto(i.id)
+        const n = prod ? agregar(prod, i.cantidad) : 0
+        if (n) agregados += n
+        else sinStock.push(i.nombre)
+      })
+      if (!agregados) {
+        this.$emit('notificar', { mensaje: 'Esos productos ya no tienen stock.', tipo: 'info' })
+        return
+      }
+      this.$emit('notificar', { mensaje: sinStock.length ? `Agregamos lo que hay en stock. Sin stock: ${sinStock.join(', ')}.` : 'Agregamos los productos al carrito.' })
+      this.$router.push({ name: 'carrito' })
+    },
     async copiar (texto, clave) {
       try {
         await navigator.clipboard.writeText(texto)
@@ -151,7 +192,7 @@ export default {
 
 <style scoped>
 .pedido { padding-top: 32px; padding-bottom: 48px; display: flex; flex-direction: column; gap: 24px; }
-.pedido__cabecera { display: flex; gap: 16px; align-items: center; }
+.pedido__cabecera { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .pedido__cabecera h1 { font-size: clamp(28px, 5vw, 44px); }
 .pedido__cabecera p { margin: 6px 0 0; }
 .pedido__ok { flex: none; width: 56px; height: 56px; border-radius: 999px; background: var(--exito); color: #fff; display: flex; align-items: center; justify-content: center; }
@@ -191,4 +232,6 @@ export default {
   .pedido { padding-top: 48px; }
   .pedido__grid { grid-template-columns: 1.1fr 1fr; gap: 24px; }
 }
+.pedido__volver { display: inline-flex; align-items: center; min-height: 44px; align-self: flex-start; }
+.pedido__repetir { margin-left: auto; }
 </style>

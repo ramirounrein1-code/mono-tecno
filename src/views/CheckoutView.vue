@@ -208,6 +208,7 @@
 <script>
 import { detalleCarrito, vaciar } from '../services/carrito'
 import { registrarPedido } from '../services/productosService'
+import { recordarPedidoInvitado } from '../services/cuentas'
 import { obtenerCotizaciones, formatearPesos, formatearDolares } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
 import { calcularTotales, descuentoPorPago } from '../services/precios'
@@ -388,8 +389,9 @@ export default {
         pago: this.pago,
         usuario: this.usuario ? this.usuario.email : null
       })
+      if (!this.usuario) recordarPedidoInvitado(pedido.numero)
       vaciar()
-      this.$router.push({ name: 'pedido', params: { numero: pedido.numero } })
+      this.$router.push({ name: 'pedido', params: { numero: pedido.numero }, query: { nuevo: '1' } })
     }
   }
 }

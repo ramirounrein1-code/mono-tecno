@@ -1,10 +1,11 @@
 <template>
   <div class="contenedor cuenta">
     <header class="cuenta__cabecera">
-      <span class="cuenta__avatar" aria-hidden="true">{{ iniciales }}</span>
+      <img v-if="usuario.foto" :src="usuario.foto" alt="" class="cuenta__avatar cuenta__avatar--foto" referrerpolicy="no-referrer">
+      <span v-else class="cuenta__avatar" aria-hidden="true">{{ iniciales }}</span>
       <div>
         <h1>Hola, {{ usuario.nombre }}</h1>
-        <p class="texto-sec">{{ usuario.email }}</p>
+        <p class="texto-sec">{{ usuario.email }}<span v-if="usuario.conGoogle" class="cuenta__google"> · Cuenta de Google</span></p>
       </div>
       <button type="button" class="btn btn--fantasma btn--chico cuenta__salir" @click="salir">Cerrar sesión</button>
     </header>
@@ -12,7 +13,8 @@
     <div class="cuenta__grid">
       <!-- Mis pedidos -->
       <section class="tarjeta bloque" aria-labelledby="t-pedidos">
-        <h2 id="t-pedidos">Mis pedidos</h2>
+        <h2 id="t-pedidos">Mis pedidos <span v-if="pedidos.length" class="cuenta__cantidad">{{ pedidos.length }}</span></h2>
+        <p v-if="pedidos.length" class="texto-sec cuenta__ayuda">Tocá un pedido para ver el detalle, los datos de pago o volver a comprarlo.</p>
         <p v-if="!pedidos.length" class="texto-sec">Todavía no hiciste compras. <router-link to="/productos">Ver el catálogo</router-link></p>
         <transition-group v-else tag="ul" name="lista" class="pedidos">
           <li v-for="p in pedidos" :key="p.numero">
@@ -128,6 +130,10 @@ export default {
 .cuenta__cabecera p { margin: 4px 0 0; overflow-wrap: anywhere; }
 .cuenta__avatar { flex: none; width: 60px; height: 60px; border-radius: 999px; background: var(--magenta); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; }
 .cuenta__salir { margin-left: auto; }
+.cuenta__avatar--foto { object-fit: cover; background: var(--rosa); }
+.cuenta__google { font-size: 13px; }
+.cuenta__cantidad { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; margin-left: 6px; border-radius: 999px; background: var(--rosa); font-size: 13px; font-weight: 600; vertical-align: middle; }
+.cuenta__ayuda { font-size: 14px; }
 .cuenta__grid { display: grid; gap: 16px; align-items: start; }
 .bloque { padding: 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .bloque h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
