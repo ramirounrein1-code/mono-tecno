@@ -12,6 +12,7 @@
     </main>
 
     <AppFooter />
+    <CompareBar />
     <BottomNav />
 
     <ToastMessage
@@ -29,12 +30,13 @@ import NavBar from './components/NavBar.vue'
 import AppFooter from './components/AppFooter.vue'
 import ToastMessage from './components/ToastMessage.vue'
 import BottomNav from './components/BottomNav.vue'
+import CompareBar from './components/CompareBar.vue'
 import { estaLogueado, registrarActividad } from './services/auth'
 import { estaLogueadoCliente } from './services/cuentas'
 
 export default {
   name: 'App',
-  components: { NavBar, AppFooter, ToastMessage, BottomNav },
+  components: { NavBar, AppFooter, ToastMessage, BottomNav, CompareBar },
   data () {
     return {
       toast: { visible: false, mensaje: '', tipo: 'exito', accion: null },
