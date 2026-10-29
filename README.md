@@ -144,7 +144,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | **Consumo de API con Fetch** | `services/dolarService.js` → `DolarWidget.vue` (Inicio) y precio aproximado en USD en tarjetas, detalle y carrito |
 | **Responsive** | Mobile-first; 2 productos por fila en celular; probado en 390 px, 768 px y 1366 px |
 | **Transición Vue** | Cambio de página (`App.vue`), modal, aviso (toast), contador del carrito, pestañas del panel, campo de dirección |
-| **Extras** | Comparador de productos (`/comparar` + barra flotante `CompareBar`), asistente Armá tu PC con chequeo de compatibilidad (`services/armado.js`: tipo de memoria, potencia de la fuente, socket del cooler, gráficos integrados) y modo oscuro (botón en el encabezado, sigue al sistema si no elegís) |
+| **Extras** | Comparador de productos (en el detalle: "Compará con otras…" de la misma categoría; tabla en `/comparar` + barra flotante `CompareBar`), asistente Armá tu PC con chequeo de compatibilidad (`services/armado.js`: tipo de memoria, potencia de la fuente, socket del cooler, gráficos integrados) y modo oscuro (botón en el encabezado, sigue al sistema si no elegís) |
 | **transition-group** | Grilla del catálogo al filtrar/ordenar, destacados, filas del carrito, tabla del panel, cotizaciones |
 
 ### Componentes reutilizables (15)
@@ -153,7 +153,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 |---|---|---|
 | `NavBar` | — | — |
 | `AppFooter` | — | — |
-| `ProductCard` | `producto`, `dolar` | `agregar`, `comparar` |
+| `ProductCard` | `producto`, `dolar` | `agregar` |
 | `SearchBar` | `busqueda`, `categoria`, `marca`, `precioMin`, `precioMax`, `condicion`, `orden`, `soloStock`, `categorias`, `marcas`, `condiciones` | `update:*` (v-model múltiple) |
 | `ProductForm` | `productoInicial`, `modo`, `errorGeneral` | `guardar`, `cancelar` |
 | `ConfirmModal` | `visible`, `titulo`, `mensaje`, `textoConfirmar` | `confirmar`, `cancelar` |
