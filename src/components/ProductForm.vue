@@ -55,7 +55,11 @@
       <!-- Stock -->
       <div class="campo">
         <label for="f-stock">Stock (unidades) *</label>
-        <input id="f-stock" v-model="form.stock" type="text" inputmode="numeric" placeholder="1" :aria-invalid="!!errores.stock" aria-describedby="e-stock" @blur="validarCampo('stock')">
+        <div class="campo__stock">
+          <button type="button" aria-label="Restar una unidad" :disabled="Number(form.stock) <= 0" @mousedown.prevent @click="ajustarStock(-1)">−</button>
+          <input id="f-stock" v-model="form.stock" type="text" inputmode="numeric" placeholder="1" :aria-invalid="!!errores.stock" aria-describedby="e-stock" @blur="validarCampo('stock')">
+          <button type="button" aria-label="Sumar una unidad" @mousedown.prevent @click="ajustarStock(1)">+</button>
+        </div>
         <p v-if="errores.stock" id="e-stock" class="campo__error">{{ errores.stock }}</p>
       </div>
 
@@ -132,7 +136,7 @@
 
 <script>
 import { CATEGORIAS, CONDICIONES } from '../data/productosIniciales'
-import { skuDisponible } from '../services/productosService'
+import { skuDisponible, siguienteSku } from '../services/productosService'
 import { resolverImagen, prepararFotoSubida } from '../services/imagenes'
 
 const VACIO = {
@@ -204,8 +208,15 @@ export default {
       }
       if (/^https?:/.test(this.form.imagen)) this.urlImagen = this.form.imagen
     }
+    // Alta nueva: se propone el próximo SKU libre.
+    if (!this.productoInicial && !this.form.sku) this.form.sku = siguienteSku()
   },
   methods: {
+    ajustarStock (cambio) {
+      const actual = parseInt(this.form.stock, 10) || 0
+      this.form.stock = String(Math.min(999, Math.max(0, actual + cambio)))
+      if (this.errores.stock) this.validarCampo('stock')
+    },
     // Validaciones personalizadas: devuelve el mensaje de error o '' si el campo es válido.
     reglas (campo) {
       const v = this.form[campo]
@@ -345,7 +356,13 @@ export default {
 .campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .campo label,
 .campo legend { font-size: 14px; font-weight: 600; }
-.campo__ayuda { display: block; font-weight: 400; font-size: 12px; color: var(--texto-2); margin-top: 2px; }
+.campo__ayuda { display: inline; font-weight: 400; font-size: 12px; color: var(--texto-2); margin-left: 6px; }
+/* Stock con botones − y + */
+.campo__stock { display: flex; gap: 8px; }
+.campo__stock input { flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums; }
+.campo__stock button { flex: none; width: 48px; min-height: 48px; border: 1px solid var(--borde); border-radius: 12px; background: var(--papel); font: inherit; font-size: 22px; color: var(--texto); cursor: pointer; }
+.campo__stock button:hover:not(:disabled) { border-color: var(--navy); }
+.campo__stock button:disabled { color: #b9b3b5; cursor: not-allowed; }
 input[type="text"],
 input[type="url"],
 select,
