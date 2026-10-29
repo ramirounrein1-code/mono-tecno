@@ -21,7 +21,7 @@ Todo se guarda en **LocalStorage**, y la cotización del dólar se trae en vivo 
 
 Temática: **Catálogo de Productos**. Diseño basado en el estilo "Superhuman" de [Refero Styles](https://styles.refero.design/), con los colores del logo (azul noche `#0B0B2A` y magenta `#D63384`).
 
-**Deploy:** [URL DE VERCEL]
+**Deploy:** https://mono-tecno-tienda.vercel.app
 **Repositorio:** https://github.com/ramirounrein1-code/mono-tecno
 
 ## Tecnologías utilizadas
@@ -85,7 +85,7 @@ Para activarlo hace falta un **ID de cliente** de Google (es gratis):
 1. Entrá a [console.cloud.google.com](https://console.cloud.google.com) y creá un proyecto (por ejemplo "mono-tecno").
 2. Andá a **APIs y servicios → Pantalla de consentimiento de OAuth**, elegí **Externo** y completá el nombre de la app, tu email y el logo.
 3. Andá a **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth**, tipo **Aplicación web**.
-4. En **Orígenes de JavaScript autorizados** agregá `http://localhost:8080` y la dirección de Vercel (por ejemplo `https://mono-tecno.vercel.app`).
+4. En **Orígenes de JavaScript autorizados** agregá `http://localhost:8080` y la dirección de Vercel (`https://mono-tecno-tienda.vercel.app`).
 5. Copiá el ID (termina en `.apps.googleusercontent.com`) y cargalo de una de estas dos formas:
    - En Vercel: **Settings → Environment Variables** → nombre `VUE_APP_GOOGLE_CLIENT_ID`, valor el ID. Después hacé **Redeploy**.
    - O pegalo directo en `GOOGLE_CLIENT_ID` dentro de `src/config/tienda.js`.
