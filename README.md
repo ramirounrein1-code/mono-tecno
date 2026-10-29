@@ -109,13 +109,15 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | Ruta | Página |
 |---|---|
 | `/` | Inicio: logo interactivo, categorías, destacados, "cómo revisamos", cotización del dólar |
-| `/productos` | Listado / catálogo (acepta `?q=` y `?categoria=` en la URL) |
+| `/productos` | Listado / catálogo (acepta `?q=`, `?categoria=`, `?marca=`, `?desde=` y `?hasta=` en la URL) |
 | `/productos/:id` | Detalle del producto |
 | `/carrito` | Carrito |
 | `/checkout` | Finalizar compra: datos, entrega y pago |
 | `/pedido/:numero` | Pedido confirmado con las instrucciones de pago |
 | `/cuenta/registro` · `/cuenta/ingresar` | Crear cuenta e iniciar sesión (clientes) |
 | `/cuenta` | Mi cuenta: mis pedidos y mis datos (requiere sesión) |
+| `/comparar` | Comparador: 2 o 3 productos lado a lado con su ficha técnica, marcando el mejor valor de cada fila |
+| `/arma-tu-pc` | Armá tu PC: elegís procesador, placa de video, memoria, disco, fuente y cooler; avisa si son compatibles y suma el total |
 | `/acerca` | Acerca de / Nosotros, con créditos de las fotos |
 | `/admin/login` | Ingreso al panel |
 | `/admin` | Panel de administración: productos y pedidos (requiere ingresar) |
@@ -133,7 +135,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | **Eliminar** | Botón Eliminar del panel + `ConfirmModal.vue` → `eliminarProducto()` |
 | **Mínimo 15 elementos** | 16 productos iniciales en `data/productosIniciales.js` (las 8 placas son el stock real que publicaba mono.tecno; el resto son ejemplos) |
 | **Buscador por texto** | En el encabezado (todas las páginas) y en el catálogo; busca por nombre, marca, categoría, specs o SKU, sin importar tildes |
-| **Filtro por categoría** | `SearchBar.vue`. Además: filtro por condición (nuevo/usado/reacondicionado) y "solo con stock" |
+| **Filtro por categoría** | `SearchBar.vue`. Además: filtro por marca, por rango de precio (rangos rápidos o desde/hasta a elección), por condición (nuevo/usado/reacondicionado) y "solo con stock" |
 | **Ordenamiento** | Más recientes (fecha), precio ascendente/descendente, nombre A-Z / Z-A |
 | **Formularios con v-model** | Registro e inicio de sesión de clientes, Mi cuenta, alta/edición de producto, checkout (datos, entrega y pago) e ingreso al panel |
 | **Validaciones personalizadas** | Obligatorios; longitud mínima (nombre, apellido, calle, localidad, descripción); formatos: email, DNI de 7 u 8 números, teléfono de 8 a 13 números, código postal (1714 o B1714ABC), SKU `MT-0000`, precio entero, stock entero, link https a imagen, foto JPG/PNG/WEBP de hasta 5 MB; SKU no repetido; efectivo solo con retiro; aceptar condiciones |
@@ -142,16 +144,17 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | **Consumo de API con Fetch** | `services/dolarService.js` → `DolarWidget.vue` (Inicio) y precio aproximado en USD en tarjetas, detalle y carrito |
 | **Responsive** | Mobile-first; 2 productos por fila en celular; probado en 390 px, 768 px y 1366 px |
 | **Transición Vue** | Cambio de página (`App.vue`), modal, aviso (toast), contador del carrito, pestañas del panel, campo de dirección |
+| **Extras** | Comparador de productos (`/comparar` + barra flotante `CompareBar`), asistente Armá tu PC con chequeo de compatibilidad (`services/armado.js`: tipo de memoria, potencia de la fuente, socket del cooler, gráficos integrados) y modo oscuro (botón en el encabezado, sigue al sistema si no elegís) |
 | **transition-group** | Grilla del catálogo al filtrar/ordenar, destacados, filas del carrito, tabla del panel, cotizaciones |
 
-### Componentes reutilizables (14)
+### Componentes reutilizables (15)
 
 | Componente | Props | Emits |
 |---|---|---|
 | `NavBar` | — | — |
 | `AppFooter` | — | — |
-| `ProductCard` | `producto`, `dolar` | `agregar` |
-| `SearchBar` | `busqueda`, `categoria`, `condicion`, `orden`, `soloStock`, `categorias`, `condiciones` | `update:*` (v-model múltiple) |
+| `ProductCard` | `producto`, `dolar` | `agregar`, `comparar` |
+| `SearchBar` | `busqueda`, `categoria`, `marca`, `precioMin`, `precioMax`, `condicion`, `orden`, `soloStock`, `categorias`, `marcas`, `condiciones` | `update:*` (v-model múltiple) |
 | `ProductForm` | `productoInicial`, `modo`, `errorGeneral` | `guardar`, `cancelar` |
 | `ConfirmModal` | `visible`, `titulo`, `mensaje`, `textoConfirmar` | `confirmar`, `cancelar` |
 | `QuantityStepper` | `modelValue`, `min`, `max`, `etiqueta` | `update:modelValue` (v-model) |
@@ -162,6 +165,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | `BottomNav` | — | — (barra inferior estilo app en celular) |
 | `LogoParticles` | `src`, `descripcion`, `color`, `separacion`, `radioInfluencia` | — |
 | `GoogleButton` | `texto` | `ingreso`, `error` |
+| `CompareBar` | — | — (barra flotante con los productos elegidos para comparar) |
 
 Además, las vistas emiten `notificar` hacia `App.vue`, que muestra el aviso.
 
@@ -205,12 +209,12 @@ mono-tecno/
 ├── public/              index.html, favicon
 ├── src/
 │   ├── assets/          logos, fotos de productos (productos/*.webp) y estilos globales
-│   ├── components/      14 componentes reutilizables
+│   ├── components/      15 componentes reutilizables
 │   ├── data/            productos iniciales, categorías y créditos de fotos
 │   ├── router/          rutas (Vue Router)
 │   ├── config/          datos de la tienda: envíos, medios de pago, contraseña del panel
-│   ├── services/        productosService (LocalStorage), carrito, cuentas, google (ingreso con Google), seguridad, precios, auth, imagenes, dolarService (Fetch)
-│   ├── views/           Inicio, Catálogo, Detalle, Carrito, Checkout, Pedido, Cuenta (ingresar/registro), Mi cuenta, Acerca de, Login admin, Admin, Alta/Edición, 404
+│   ├── services/        productosService (LocalStorage), carrito, cuentas, google (ingreso con Google), seguridad, precios, auth, imagenes, dolarService (Fetch), comparar, armado (compatibilidad), tema (modo oscuro)
+│   ├── views/           Inicio, Catálogo, Detalle, Carrito, Checkout, Pedido, Cuenta (ingresar/registro), Mi cuenta, Comparar, Armá tu PC, Acerca de, Login admin, Admin, Alta/Edición, 404
 │   ├── App.vue
 │   └── main.js
 ├── docs/capturas/       capturas de pantalla
