@@ -97,9 +97,12 @@
               <svg :class="['faq__flecha', { 'faq__flecha--abierta': abierta === i }]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
             </button>
           </h3>
-          <transition name="faq">
-            <p v-show="abierta === i" :id="'faq-' + i" class="faq__respuesta">{{ f.r }}</p>
-          </transition>
+          <!-- La respuesta se despliega suave (animando la altura con grid) -->
+          <div :id="'faq-' + i" :class="['faq__panel', { abierto: abierta === i }]" role="region" :aria-hidden="abierta === i ? 'false' : 'true'">
+            <div class="faq__interior">
+              <p class="faq__respuesta">{{ f.r }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -131,7 +134,7 @@ export default {
     return {
       logo,
       tienda: TIENDA,
-      abierta: 0,
+      abierta: null,
       servicios: [
         { titulo: 'Reparación y limpieza', texto: 'Diagnóstico, limpieza interna, cambio de pasta térmica y mejoras para que tu PC ande fresca y rápida.', icono: ['M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z'] },
         { titulo: 'Armado a medida', texto: 'Te ayudamos a elegir componentes compatibles según tu presupuesto y lo que vas a usar, y te la entregamos armada.', icono: ['M4 4h16v12H4z', 'M8 20h8', 'M12 16v4'] },
@@ -231,14 +234,16 @@ export default {
 .faq { display: flex; flex-direction: column; gap: 10px; }
 .faq__item { overflow: hidden; }
 .faq__item h3 { margin: 0; font-size: inherit; }
-.faq__pregunta { width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border: 0; background: transparent; font: inherit; font-size: 17px; font-weight: 600; color: var(--texto); text-align: left; cursor: pointer; }
+.faq__pregunta { width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border: 0; background: transparent; font: inherit; font-size: 17px; font-weight: 600; line-height: 1.35; color: var(--texto); text-align: left; cursor: pointer; }
 .faq__pregunta:focus { outline: none; }
 .faq__pregunta:focus-visible { outline: 2px solid var(--magenta); outline-offset: -4px; border-radius: 14px; }
 .faq__flecha { flex: none; transition: transform 0.2s ease; color: var(--texto-2); }
 .faq__flecha--abierta { transform: rotate(180deg); }
-.faq__respuesta { margin: 0; padding: 0 20px 18px; color: var(--texto-2); }
-.faq-enter-active, .faq-leave-active { transition: opacity 0.2s ease; }
-.faq-enter-from, .faq-leave-to { opacity: 0; }
+.faq__panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+.faq__panel.abierto { grid-template-rows: 1fr; }
+.faq__interior { overflow: hidden; }
+.faq__respuesta { margin: 0; padding: 0 20px 18px; color: var(--texto-2); opacity: 0; transition: opacity 0.2s ease; }
+.faq__panel.abierto .faq__respuesta { opacity: 1; transition-delay: 0.08s; }
 
 /* Contacto */
 .contacto { background: var(--navy); color: #fff; border-radius: 24px; padding: 32px 24px; display: flex; flex-direction: column; gap: 20px; }
