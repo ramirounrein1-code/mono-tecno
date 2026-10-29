@@ -13,8 +13,9 @@
           </a>
           <router-link to="/productos" class="btn btn--fantasma">Ver el catálogo</router-link>
         </div>
-        <p class="nos__horario">{{ tienda.zona }} · {{ tienda.horarios }}</p>
       </div>
+      <!-- Solo en computadora: en el celular no se muestra ni se descarga -->
+      <GpuModel3D v-if="esEscritorio" class="nos__gpu" />
     </section>
 
     <!-- 2. Qué hacemos -->
@@ -48,39 +49,7 @@
       </div>
     </section>
 
-    <!-- 4. Cómo comprar -->
-    <section class="contenedor nos__bloque" aria-labelledby="t-comprar">
-      <h2 id="t-comprar" class="nos__titulo">Cómo comprar</h2>
-      <ol class="compra">
-        <li v-for="(p, i) in comoComprar" :key="p" class="tarjeta compra__paso">
-          <span class="compra__num">{{ i + 1 }}</span>
-          <p>{{ p }}</p>
-        </li>
-      </ol>
-    </section>
-
-    <!-- 5. Envíos, pagos y garantía -->
-    <section class="contenedor nos__bloque nos__info" aria-label="Envíos y garantía">
-      <div class="tarjeta info">
-        <h2>Envíos y retiro</h2>
-        <ul class="envios">
-          <li v-for="e in tienda.envios" :key="e.id">
-            <div class="envios__fila"><strong>{{ e.nombre }}</strong><span :class="{ gratis: !e.costo }">{{ e.costo ? pesos(e.costo) : 'Gratis' }}</span></div>
-            <span class="texto-sec">{{ e.detalle }}</span>
-          </li>
-        </ul>
-      </div>
-      <div class="tarjeta info">
-        <h2>Garantía</h2>
-        <ul class="garantia">
-          <li><strong>Placas usadas:</strong> 3 meses de garantía de mono.tecno.</li>
-          <li><strong>Productos nuevos:</strong> garantía oficial del fabricante.</li>
-        </ul>
-        <p class="texto-sec">Si algo falla, escribinos con tu número de pedido y lo revisamos.</p>
-      </div>
-    </section>
-
-    <!-- 6. Preguntas frecuentes -->
+    <!-- 4. Preguntas frecuentes -->
     <section class="contenedor nos__bloque" aria-labelledby="t-faq">
       <h2 id="t-faq" class="nos__titulo">Preguntas frecuentes</h2>
       <div class="faq">
@@ -101,7 +70,7 @@
       </div>
     </section>
 
-    <!-- 7. Contacto -->
+    <!-- 5. Contacto -->
     <section class="contenedor nos__bloque">
       <div class="contacto">
         <div>
@@ -118,14 +87,18 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue'
 import { TIENDA } from '../config/tienda'
 import { formatearPesos } from '../services/dolarService'
 
 export default {
   name: 'AboutView',
+  // La placa 3D se carga aparte para no hacer más pesado el resto de la página.
+  components: { GpuModel3D: defineAsyncComponent(() => import('../components/GpuModel3D.vue')) },
   data () {
     return {
       tienda: TIENDA,
+      esEscritorio: false,
       abierta: null,
       servicios: [
         { titulo: 'Reparación y limpieza', texto: 'Diagnóstico, limpieza interna, cambio de pasta térmica y mejoras para que tu PC ande fresca y rápida.', icono: ['M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z'] },
@@ -138,13 +111,16 @@ export default {
         { titulo: 'Rendimiento', texto: 'Benchmarks comparados con valores de referencia del modelo.' },
         { titulo: 'Limpieza', texto: 'Se limpian los ventiladores y, si hace falta, se cambia la pasta térmica.' }
       ],
-      comoComprar: [
-        'Elegí los productos y agregalos al carrito.',
-        'Completá tus datos y elegí retiro o envío.',
-        'Pagá con Mercado Pago, transferencia o efectivo al retirar.',
-        'Te escribimos para coordinar la entrega.'
-      ]
     }
+  },
+  mounted () {
+    this.consultaEscritorio = window.matchMedia('(min-width: 900px) and (pointer: fine)')
+    this.actualizarEscritorio = () => { this.esEscritorio = this.consultaEscritorio.matches }
+    this.actualizarEscritorio()
+    this.consultaEscritorio.addEventListener('change', this.actualizarEscritorio)
+  },
+  beforeUnmount () {
+    if (this.consultaEscritorio) this.consultaEscritorio.removeEventListener('change', this.actualizarEscritorio)
   },
   computed: {
     linkInstagram () {
@@ -169,7 +145,6 @@ export default {
     }
   },
   methods: {
-    pesos (v) { return formatearPesos(v) }
   }
 }
 </script>
@@ -184,7 +159,6 @@ export default {
 .nos__hero h1 { font-size: clamp(36px, 6.5vw, 64px); line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance; max-width: 760px; }
 .nos__hero p { margin: 0; font-size: 18px; color: var(--texto-2); max-width: 560px; }
 .nos__acciones { display: flex; flex-wrap: wrap; gap: 10px; }
-.nos__hero .nos__horario { font-size: 14px; }
 
 /* Qué hacemos */
 .servicios { display: grid; gap: 12px; }
@@ -203,23 +177,11 @@ export default {
 .paso h3 { font-size: 17px; font-weight: 600; }
 .paso p { margin: 4px 0 0; font-size: 14px; color: var(--texto-2); }
 
-/* Cómo comprar */
-.compra { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: paso; }
-.compra__paso { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-.compra__num { width: 32px; height: 32px; border-radius: 999px; border: 1px solid var(--texto); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
-.compra__paso p { margin: 0; font-size: 16px; }
 
 /* Envíos, pagos y garantía */
-.nos__info { display: grid; gap: 12px; align-items: stretch; }
 .info { padding: 22px; display: flex; flex-direction: column; gap: 12px; }
 .info h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .info p { margin: 0; }
-.envios, .garantia { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.envios li { display: flex; flex-direction: column; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid var(--borde); }
-.envios li:last-child { border-bottom: 0; padding-bottom: 0; }
-.envios__fila { display: flex; justify-content: space-between; gap: 12px; }
-.envios__fila span { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.envios .texto-sec { font-size: 14px; }
 .gratis { color: var(--exito); }
 
 /* Preguntas frecuentes */
@@ -246,17 +208,15 @@ export default {
 .contacto__btn--borde { background: transparent; border-color: rgba(255, 255, 255, 0.5); }
 
 @media (min-width: 700px) {
-  .servicios, .compra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .compra { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .servicios { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 900px) {
   .nos { gap: 72px; }
-  .nos__hero { padding-top: 56px; }
+  .nos__hero { padding-top: 56px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; }
   .pasos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .paso { flex-direction: column; }
-  .nos__info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .nos__banda { padding: 64px 0; }
+    .nos__banda { padding: 64px 0; }
   .contacto { flex-direction: row; align-items: center; justify-content: space-between; padding: 40px; }
   .contacto__acciones { flex: none; }
 }
