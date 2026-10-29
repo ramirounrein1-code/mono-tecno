@@ -83,8 +83,15 @@
       <!-- PEDIDOS -->
       <section v-else id="panel-pedidos" key="pedidos" role="tabpanel" aria-labelledby="tab-pedidos" class="panel">
         <p v-if="!pedidos.length" class="texto-sec panel__vacio">Todavía no hay pedidos. Se registran cuando un cliente confirma su carrito.</p>
-        <ul v-else class="pedidos">
-          <li v-for="ped in pedidos" :key="ped.numero" class="tarjeta pedido">
+        <template v-else>
+        <div class="filtro-pedidos" role="group" aria-label="Filtrar pedidos">
+          <button v-for="f in filtrosPedidos" :key="f.id" type="button" :class="{ activo: filtroPedidos === f.id }" :aria-pressed="filtroPedidos === f.id ? 'true' : 'false'" @click="filtroPedidos = f.id">
+            {{ f.nombre }} <span>{{ f.cantidad }}</span>
+          </button>
+        </div>
+        <p v-if="!pedidosFiltrados.length" class="texto-sec panel__vacio">{{ filtroPedidos === 'activos' ? 'No hay pedidos pendientes. Los entregados y cancelados están en "Finalizados".' : 'No hay pedidos en esta lista.' }}</p>
+        <transition-group tag="ul" name="fila" class="pedidos">
+          <li v-for="ped in pedidosFiltrados" :key="ped.numero" class="tarjeta pedido">
             <div class="pedido__cabecera">
               <strong>#{{ ped.numero }}</strong>
               <span class="texto-sec">{{ fecha(ped.fecha) }}</span>
@@ -102,9 +109,14 @@
               <select :id="'estado-' + ped.numero" :value="ped.estado" :class="'estado--' + claseEstado(ped.estado)" @change="cambiarEstado(ped, $event.target.value)">
                 <option v-for="e in estados" :key="e" :value="e">{{ e }}</option>
               </select>
+              <button type="button" class="pedido__borrar" :aria-label="'Borrar pedido ' + ped.numero" @click="pedidoAEliminar = ped">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" /></svg>
+                Borrar
+              </button>
             </div>
           </li>
-        </ul>
+        </transition-group>
+        </template>
       </section>
     </transition>
 
@@ -114,6 +126,14 @@
       :mensaje="aEliminar ? `Vas a eliminar “${aEliminar.nombre}” del catálogo. Esta acción no se puede deshacer.` : ''"
       @confirmar="eliminar"
       @cancelar="aEliminar = null"
+    />
+    <ConfirmModal
+      :visible="!!pedidoAEliminar"
+      titulo="¿Borrar el pedido?"
+      :mensaje="textoBorrarPedido"
+      texto-confirmar="Borrar pedido"
+      @confirmar="borrarPedido"
+      @cancelar="pedidoAEliminar = null"
     />
     <ConfirmModal
       :visible="confirmarRestaurar"
@@ -128,7 +148,7 @@
 
 <script>
 import ConfirmModal from '../components/ConfirmModal.vue'
-import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, actualizarEstadoPedido, ESTADOS_PEDIDO } from '../services/productosService'
+import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, actualizarEstadoPedido, eliminarPedido, ESTADOS_PEDIDO, ESTADOS_FINALIZADOS } from '../services/productosService'
 import { cerrarSesion } from '../services/auth'
 import { formatearPesos } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
@@ -149,6 +169,8 @@ export default {
       pestana: 'productos',
       aEliminar: null,
       confirmarRestaurar: false,
+      pedidoAEliminar: null,
+      filtroPedidos: 'activos',
       estados: ESTADOS_PEDIDO
     }
   },
@@ -163,6 +185,26 @@ export default {
         precio: (a, b) => b.precio - a.precio
       }
       return [...lista].sort(comparadores[this.orden])
+    },
+    // Pendientes = todo lo que no está entregado ni cancelado.
+    pedidosFiltrados () {
+      if (this.filtroPedidos === 'todos') return this.pedidos
+      const fin = (p) => ESTADOS_FINALIZADOS.includes(p.estado)
+      return this.pedidos.filter((p) => (this.filtroPedidos === 'finalizados' ? fin(p) : !fin(p)))
+    },
+    filtrosPedidos () {
+      const fin = this.pedidos.filter((p) => ESTADOS_FINALIZADOS.includes(p.estado)).length
+      return [
+        { id: 'activos', nombre: 'Pendientes', cantidad: this.pedidos.length - fin },
+        { id: 'finalizados', nombre: 'Finalizados', cantidad: fin },
+        { id: 'todos', nombre: 'Todos', cantidad: this.pedidos.length }
+      ]
+    },
+    textoBorrarPedido () {
+      const p = this.pedidoAEliminar
+      if (!p) return ''
+      const vuelve = !['Entregado', 'Enviado', 'Cancelado'].includes(p.estado)
+      return `Vas a borrar el pedido #${p.numero} de ${p.cliente.nombre} ${p.cliente.apellido}. ${vuelve ? 'Como todavía no se entregó, sus productos vuelven a estar a la venta. ' : ''}Esta acción no se puede deshacer.`
     },
     sinStock () {
       return this.productos.filter((p) => p.stock === 0).length
@@ -191,9 +233,21 @@ export default {
       return (e || '').toLowerCase().replace(/\s+/g, '-')
     },
     cambiarEstado (ped, estado) {
+      const antes = ped.estado
       actualizarEstadoPedido(ped.numero, estado)
       this.cargar()
-      this.$emit('notificar', { mensaje: `Pedido #${ped.numero}: ${estado}.`, tipo: 'info' })
+      let extra = ''
+      if (ESTADOS_FINALIZADOS.includes(estado) && this.filtroPedidos === 'activos') extra = ' Pasó a "Finalizados".'
+      if (estado === 'Cancelado') extra += ' Sus productos volvieron a estar a la venta.'
+      if (antes === 'Cancelado' && estado !== 'Cancelado') extra += ' Se volvió a descontar el stock.'
+      this.$emit('notificar', { mensaje: `Pedido #${ped.numero}: ${estado}.${extra}`, tipo: 'info' })
+    },
+    borrarPedido () {
+      const n = this.pedidoAEliminar.numero
+      eliminarPedido(n)
+      this.pedidoAEliminar = null
+      this.cargar()
+      this.$emit('notificar', { mensaje: `Se borró el pedido #${n}.` })
     },
     salir () {
       cerrarSesion()
@@ -300,7 +354,14 @@ export default {
 .fila-enter-from,
 .fila-leave-to { opacity: 0; transform: translateX(-16px); }
 
-.pedidos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pedidos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.filtro-pedidos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.filtro-pedidos button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--borde); border-radius: 999px; background: var(--papel); font: inherit; font-size: 14px; color: var(--texto); cursor: pointer; }
+.filtro-pedidos button span { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--fondo); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+.filtro-pedidos button.activo { background: var(--navy); border-color: var(--navy); color: #fff; }
+.filtro-pedidos button.activo span { background: var(--magenta); color: #fff; }
+.pedido__borrar { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid var(--borde); border-radius: 10px; background: var(--papel); font: inherit; font-size: 14px; color: var(--error); cursor: pointer; }
+.pedido__borrar:hover { background: #fff5f4; border-color: var(--error); }
 .pedido { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
 .pedido__cabecera { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
 .pedido__total { margin-left: auto; font-weight: 650; font-variant-numeric: tabular-nums; }
