@@ -32,6 +32,7 @@ import ToastMessage from './components/ToastMessage.vue'
 import BottomNav from './components/BottomNav.vue'
 import CompareBar from './components/CompareBar.vue'
 import { estaLogueado, registrarActividad } from './services/auth'
+import { sincronizarCatalogo } from './services/productosService'
 import { estaLogueadoCliente } from './services/cuentas'
 
 export default {
@@ -52,6 +53,9 @@ export default {
     window.addEventListener('storage', this.sesionCambio)
     // Cada minuto revisa si la sesión del panel venció (8 h o 30 min sin actividad).
     this.vigilante = setInterval(this.revisarAdmin, 60000)
+    // Catálogo al día desde la nube (stock y precios), al abrir y cada 2 minutos.
+    sincronizarCatalogo()
+    this.sincronizador = setInterval(sincronizarCatalogo, 120000)
   },
   methods: {
     async revisarAdmin () {
@@ -74,6 +78,7 @@ export default {
   beforeUnmount () {
     clearTimeout(this.timer)
     clearInterval(this.vigilante)
+    clearInterval(this.sincronizador)
     window.removeEventListener('pointerdown', registrarActividad)
     window.removeEventListener('keydown', registrarActividad)
     window.removeEventListener('storage', this.sesionCambio)
