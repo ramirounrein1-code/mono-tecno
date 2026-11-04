@@ -45,9 +45,15 @@ export const TIENDA = {
 // Para cambiar la contraseña, ver la sección "Panel de administración" del README.
 export const ADMIN_HASH = '33415c48e8812d065820050035541383e92f1be1a2f35c1b08a1b5d4264f9b36'
 
-// Ingreso con Google: ID de cliente OAuth del proyecto "mono-tecno-tienda" de Google Cloud.
+// Supabase (base de datos en la nube). La clave pública ("publishable") está hecha para ir en el
+// navegador: solo permite leer el catálogo y llamar a las funciones de la base, que validan todo
+// del lado del servidor. La clave secreta NUNCA va en el código.
+export const SUPABASE_URL = process.env.VUE_APP_SUPABASE_URL || 'https://kjctxnklfsycmcaonbes.supabase.co'
+export const SUPABASE_ANON_KEY = process.env.VUE_APP_SUPABASE_ANON_KEY || 'sb_publishable_N-tnoaDfkrzZxmh7ui_8dQ_mkFN263P'
+
+// Ingreso con Google: ID de cliente OAuth del proyecto "mono-tecno" de Google Cloud.
 // Es un dato público (no es una contraseña); Google solo lo acepta desde las direcciones autorizadas.
-export const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || '492893782456-dcvklnrm5ukhks0oa260g7p191assks5.apps.googleusercontent.com'
+export const GOOGLE_CLIENT_ID = process.env.VUE_APP_GOOGLE_CLIENT_ID || '756501765128-3fl0d90sabicul4s7g1pq4cm2lfesig1.apps.googleusercontent.com'
 
 // Cuenta del dueño de la tienda: viene creada de fábrica en todos los navegadores.
 // La contraseña no está escrita: solo su hash PBKDF2 con sal (igual que cualquier cuenta).
