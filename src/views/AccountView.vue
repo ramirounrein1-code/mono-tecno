@@ -146,6 +146,10 @@ export default {
 .cuenta__cabecera p { margin: 4px 0 0; overflow-wrap: anywhere; }
 .cuenta__avatar { flex: none; width: 60px; height: 60px; border-radius: 999px; background: var(--magenta); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; }
 .cuenta__salir { margin-left: auto; }
+/* En el celular el botón baja a su propia línea: alineado a la izquierda, con el resto del texto */
+@media (max-width: 600px) {
+  .cuenta__salir { margin-left: 0; }
+}
 .cuenta__panel { display: flex; align-items: center; gap: 14px; padding: 16px 18px; color: var(--texto); text-decoration: none !important; border-color: var(--magenta); }
 .cuenta__panel > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .cuenta__panel .texto-sec { font-size: 14px; }
