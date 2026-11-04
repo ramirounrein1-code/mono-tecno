@@ -153,7 +153,7 @@ export default {
       this.camara.aspect = w / h
       const fovV = THREE.MathUtils.degToRad(this.camara.fov)
       const fovH = 2 * Math.atan(Math.tan(fovV / 2) * this.camara.aspect)
-      const distancia = (this.radio * 1.04) / Math.sin(Math.min(fovV, fovH) / 2)
+      const distancia = (this.radio * 0.9) / Math.sin(Math.min(fovV, fovH) / 2)
       this.camara.position.set(0, 0, distancia)
       this.camara.lookAt(0, 0, 0)
       this.camara.updateProjectionMatrix()
@@ -214,7 +214,7 @@ export default {
 .gpu3d { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .gpu3d__lienzo {
   width: 100%;
-  height: 420px;
+  height: 500px;
   cursor: grab;
   user-select: none;
   transition: opacity 0.4s ease;
