@@ -229,6 +229,24 @@ export const FICHAS = {
     ideal: ['Equipos con placas de gama alta', 'Armados silenciosos', 'Margen para futuras actualizaciones']
   },
 
+  // ---------------- Motherboards ----------------
+  p17: {
+    ficha: [
+      ['Socket', 'AM4'],
+      ['Chipset', 'AMD B550'],
+      ['Formato', 'ATX (30,5 × 24,4 cm)'],
+      ['Memoria', '4 × DDR4 · dual channel · hasta 128 GB'],
+      ['Velocidad de memoria', '2133 a 4733 MHz (con overclock)'],
+      ['Ranuras de video', '1 × PCIe 4.0 x16'],
+      ['M.2', '2 (una PCIe 4.0 x4 y otra PCIe 3.0 x4)'],
+      ['SATA', '4 × SATA 6 Gb/s'],
+      ['Red', 'LAN 1 Gb · Wi-Fi 5 (802.11ac) · Bluetooth 5.0'],
+      ['Salida de video', 'HDMI (solo con procesadores con gráficos integrados)'],
+      ['Procesadores compatibles', 'Ryzen 3000, 4000 G, 5000 y 5000 G']
+    ],
+    ideal: ['Armar un equipo AM4 con Ryzen 5000', 'Conectarse por Wi-Fi sin placa aparte', 'Usar discos M.2 PCIe 4.0']
+  },
+
   // ---------------- Refrigeración ----------------
   p16: {
     ficha: [

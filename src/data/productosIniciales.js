@@ -1,6 +1,6 @@
 import { FICHAS } from './fichas'
 
-// Catálogo inicial (16 productos). Se carga en LocalStorage la primera vez.
+// Catálogo inicial (17 productos). Se carga en LocalStorage la primera vez.
 // Las 8 placas de video son el stock real que publicaba mono.tecno; el resto son productos de ejemplo.
 // Precios en pesos argentinos (ARS).
 
@@ -34,7 +34,8 @@ const base = [
   { id: 'p13', sku: 'MT-0013', nombre: 'Corsair Vengeance RGB 32GB (2x16) DDR5 6000', marca: 'Corsair', categoria: 'Memorias RAM', condicion: 'Nuevo', precio: 160000, stock: 2, destacado: false, fechaAlta: '2026-09-28', imagen: 'asset:ddr5-vengeance', specs: '32 GB · DDR5 · 6000 MT/s · CL36 · blanca', descripcion: 'Kit de memoria DDR5 de 32 GB en dual channel, en color blanco, para plataformas AM5 e Intel de 12ª gen en adelante.' },
   { id: 'p14', sku: 'MT-0014', nombre: 'Samsung 980 PRO 1TB NVMe', marca: 'Samsung', categoria: 'Almacenamiento', condicion: 'Nuevo', precio: 135000, stock: 4, destacado: false, fechaAlta: '2026-09-26', imagen: 'asset:ssd-980-pro', specs: '1 TB · M.2 PCIe 4.0 · hasta 7000 MB/s', descripcion: 'Disco sólido M.2 de alta velocidad. Los juegos y el sistema cargan en segundos.' },
   { id: 'p15', sku: 'MT-0015', nombre: 'be quiet! Straight Power 12 1200W', marca: 'be quiet!', categoria: 'Fuentes', condicion: 'Nuevo', precio: 310000, stock: 1, destacado: false, fechaAlta: '2026-09-24', imagen: 'asset:fuente-modular', specs: '1200 W · 80 Plus Platinum · full modular', descripcion: 'Fuente silenciosa y full modular, con cables desmontables para un armado prolijo. Alcanza de sobra para cualquier placa del catálogo.' },
-  { id: 'p16', sku: 'MT-0016', nombre: 'Cooler Master Hyper 212 EVO', marca: 'Cooler Master', categoria: 'Refrigeración', condicion: 'Nuevo', precio: 45000, stock: 5, destacado: false, fechaAlta: '2026-09-22', imagen: 'asset:cooler-hyper-212', specs: 'Torre · 4 heatpipes · ventilador 120 mm', descripcion: 'Disipador por aire clásico y silencioso. Baja varios grados respecto del cooler que viene con el procesador.' }
+  { id: 'p16', sku: 'MT-0016', nombre: 'Cooler Master Hyper 212 EVO', marca: 'Cooler Master', categoria: 'Refrigeración', condicion: 'Nuevo', precio: 45000, stock: 5, destacado: false, fechaAlta: '2026-09-22', imagen: 'asset:cooler-hyper-212', specs: 'Torre · 4 heatpipes · ventilador 120 mm', descripcion: 'Disipador por aire clásico y silencioso. Baja varios grados respecto del cooler que viene con el procesador.' },
+  { id: 'p17', sku: 'MT-0017', nombre: 'Gigabyte B550 UD AC', marca: 'Gigabyte', categoria: 'Motherboards', condicion: 'Nuevo', precio: 145000, stock: 2, destacado: false, fechaAlta: '2026-11-04', imagen: 'asset:motherboard-b550', specs: 'AM4 · B550 · ATX · DDR4 · Wi-Fi', descripcion: 'Motherboard ATX para Ryzen en socket AM4 con Wi-Fi y Bluetooth. Ideal para armar un equipo con el Ryzen 5 5600X y memorias DDR4.' }
 ]
 
 // Cada producto suma su ficha técnica y para qué uso es ideal.
