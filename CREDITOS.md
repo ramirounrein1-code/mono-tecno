@@ -25,4 +25,4 @@ Las fotos de productos (salvo la RTX 3060) son de Wikimedia Commons, con licenci
 |---|---|---|---|
 | Placa 3D de la página Nosotros | [GeForce RTX 3080 Graphics Card](https://sketchfab.com/3d-models/geforce-rtx-3080-graphics-card-8b947ee1bf7a4e3d8ffa1c24893ac160) | [_surovic_ (samuelsurovic)](https://sketchfab.com/samuelsurovic) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 
-Cambios: se comprimió de 12 MB a 1 MB (geometría con meshopt y texturas en WebP de 1024 px) y se acostó para mostrarla en horizontal. El crédito también aparece debajo del modelo en la página.
+Cambios: se comprimió de 12 MB a 1 MB (geometría con meshopt y texturas en WebP de 1024 px) y se acostó para mostrarla en horizontal. El crédito se da en este archivo y en el README.

@@ -67,7 +67,7 @@ npm run build      # versión de producción en /dist
 ### Base de datos (Supabase)
 
 1. Crear un proyecto gratis en [supabase.com](https://supabase.com).
-2. En **SQL Editor**, pegar y ejecutar `supabase/esquema.sql` (tablas, permisos y funciones) y después `supabase/datos_iniciales.sql` (los 16 productos).
+2. En **SQL Editor**, pegar y ejecutar `supabase/esquema.sql` (tablas, permisos y funciones) y después `supabase/datos_iniciales.sql` (los 17 productos).
 3. Copiar la URL del proyecto y la clave **publishable** en `src/config/tienda.js` (o como variables `VUE_APP_SUPABASE_URL` y `VUE_APP_SUPABASE_ANON_KEY` en Vercel).
 
 Sin Supabase configurado, la tienda funciona igual guardando todo en LocalStorage (modo demo).
@@ -196,7 +196,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | **Visualizar** | Catálogo, detalle y tabla del panel |
 | **Modificar** | `/admin/productos/:id/editar` → `actualizarProducto()` |
 | **Eliminar** | Botón Eliminar del panel + `ConfirmModal.vue` → `eliminarProducto()` |
-| **Mínimo 15 elementos** | 16 productos iniciales en `data/productosIniciales.js` (las 8 placas son el stock real que publicaba mono.tecno; el resto son ejemplos) |
+| **Mínimo 15 elementos** | 17 productos iniciales en `data/productosIniciales.js` (las 8 placas son el stock real que publicaba mono.tecno; el resto son ejemplos) |
 | **Buscador por texto** | En el encabezado (todas las páginas) y en el catálogo; busca por nombre, marca, categoría, specs o SKU, sin importar tildes |
 | **Filtro por categoría** | `SearchBar.vue`. Además: filtro por marca, por rango de precio (rangos rápidos o desde/hasta a elección), por condición (nuevo/usado/reacondicionado) y "solo con stock" |
 | **Ordenamiento** | Más recientes (fecha), precio ascendente/descendente, nombre A-Z / Z-A |
@@ -314,7 +314,7 @@ mono-tecno/
 
 ## Notas
 
-- **Placa 3D**: modelo "GeForce RTX 3080 Graphics Card" de _surovic_ en Sketchfab (CC BY 4.0), comprimido de 12 MB a 1 MB. Crédito en la página y en `CREDITOS.md`.
+- **Placa 3D**: modelo "GeForce RTX 3080 Graphics Card" de _surovic_ en Sketchfab (CC BY 4.0), comprimido de 12 MB a 1 MB. Crédito en `CREDITOS.md`.
 - **Fotos**: todas en 1200×900, sobre fondo blanco. La RTX 3060 usa la foto original de mono.tecno; las demás son de Wikimedia Commons con licencias libres, con el fondo quitado (créditos en `CREDITOS.md`). Algunas son ilustrativas de un modelo parecido.
 - **Precios**: los de las placas de video son los que publicaba mono.tecno; los del resto de los productos son de ejemplo.
 - Para volver al catálogo inicial: Panel → "Restaurar el catálogo inicial".
