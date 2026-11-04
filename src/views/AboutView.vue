@@ -211,7 +211,7 @@ export default {
 }
 @media (min-width: 900px) {
   .nos { gap: 72px; }
-  .nos__hero { padding-top: 56px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; }
+  .nos__hero { padding-top: 40px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px; }
   .pasos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .paso { flex-direction: column; }
     .nos__banda { padding: 64px 0; }

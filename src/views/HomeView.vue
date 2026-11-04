@@ -147,11 +147,18 @@ export default {
 
 .seccion--compacta { padding: 40px 0; }
 .categorias {
+  /* Todas las categorías en una sola fila: en celular se desliza de costado */
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(140px, 1fr);
   gap: 10px;
   margin-top: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
 }
+.categoria { scroll-snap-align: start; }
 .categoria {
   display: flex;
   flex-direction: column;
@@ -221,14 +228,14 @@ export default {
 .controles p { margin: 2px 0 0; font-size: 14px; color: var(--texto-2); }
 
 @media (min-width: 640px) {
-  .categorias { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .controles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 900px) {
   .hero { padding: 56px 0 16px; }
   .hero__grid { grid-template-columns: 1.15fr 1fr; gap: 56px; }
   .hero__logo { display: block; }
-  .categorias { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .categorias { grid-auto-columns: minmax(0, 1fr); overflow: visible; padding-bottom: 0; }
+  .categoria { padding: 14px; }
   .banda { padding: 88px 0; }
   .banda__grid { grid-template-columns: 1fr 1.3fr; align-items: center; gap: 56px; }
 }
