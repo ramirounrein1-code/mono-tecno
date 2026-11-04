@@ -18,3 +18,11 @@ Las fotos de productos (salvo la RTX 3060) son de Wikimedia Commons, con licenci
 | Samsung 980 PRO | [D-Kuru](https://commons.wikimedia.org/wiki/File:Samsung_980_PRO_PCIe_4.0_NVMe_SSD_1TB-top_PNr%C2%B00915.jpg) | CC BY-SA 4.0 |
 | be quiet! Straight Power 12 | [PantheraLeo1359531](https://commons.wikimedia.org/wiki/File:Be_quiet!_Straight_Power_12_1200W_20240405_HOF1650-HDR_RAW-Export_000105.png) | CC BY 4.0 |
 | Cooler Master Hyper 212 EVO | [osman gucel](https://commons.wikimedia.org/wiki/File:Cooler_Master_Hyper_212_EVO_-_CPU_Cooler_with_120mm_PWM_Fan_(RR-212E-20PK-R2).jpg) | CC BY 2.0 |
+
+## Modelo 3D
+
+| Uso | Modelo | Autor | Licencia |
+|---|---|---|---|
+| Placa 3D de la página Nosotros | [GeForce RTX 3080 Graphics Card](https://sketchfab.com/3d-models/geforce-rtx-3080-graphics-card-8b947ee1bf7a4e3d8ffa1c24893ac160) | [_surovic_ (samuelsurovic)](https://sketchfab.com/samuelsurovic) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
+
+Cambios: se comprimió de 12 MB a 1 MB (geometría con meshopt y texturas en WebP de 1024 px) y se acostó para mostrarla en horizontal. El crédito también aparece debajo del modelo en la página.

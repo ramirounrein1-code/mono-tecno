@@ -17,12 +17,25 @@ La app tiene dos partes:
 - **Tienda**: catálogo con buscador, filtros y orden, detalle de cada producto, carrito y compra en 3 pasos (datos, entrega y pago) con Mercado Pago, transferencia o efectivo.
 - **Panel de administración** (`/admin`, con contraseña): alta, edición y baja de productos con foto (subida desde la computadora o por link), control de stock y pedidos con su estado.
 
-Todo se guarda en **LocalStorage**, y la cotización del dólar se trae en vivo con **Fetch** desde DolarAPI para mostrar el precio aproximado en dólares.
+Los productos y los pedidos viven en una base de datos en la nube (**Supabase**), a la que la tienda se conecta con **Fetch**. **LocalStorage** guarda una copia para que la página cargue al instante (y funcione igual si la nube no responde), además del carrito y las cuentas. La cotización del dólar se trae en vivo desde DolarAPI para mostrar el precio aproximado en dólares.
 
 Temática: **Catálogo de Productos**. Diseño basado en el estilo "Superhuman" de [Refero Styles](https://styles.refero.design/), con los colores del logo (azul noche `#0B0B2A` y magenta `#D63384`).
 
 **Deploy:** https://mono-tecno-tienda.vercel.app
 **Repositorio:** https://github.com/ramirounrein1-code/mono-tecno
+
+## Datos para la corrección
+
+| Qué | Valor |
+|---|---|
+| Página publicada (Vercel) | https://mono-tecno-tienda.vercel.app |
+| Repositorio (GitHub) | https://github.com/ramirounrein1-code/mono-tecno |
+| Ingreso con Google · ID de cliente | `756501765128-3fl0d90sabicul4s7g1pq4cm2lfesig1.apps.googleusercontent.com` |
+| Supabase · URL del proyecto | `https://kjctxnklfsycmcaonbes.supabase.co` |
+| Supabase · clave pública (publishable) | `sb_publishable_N-tnoaDfkrzZxmh7ui_8dQ_mkFN263P` |
+| Cuenta de cliente y panel | `ramirounrein1@gmail.com` · contraseña `isec` (ver "Accesos para probar") |
+
+El ID de Google y la clave pública de Supabase están pensados para ir en el navegador: no dan acceso a nada privado. La clave secreta de Supabase no está en el proyecto.
 
 ## Tecnologías utilizadas
 
@@ -30,7 +43,7 @@ Temática: **Catálogo de Productos**. Diseño basado en el estilo "Superhuman" 
 - Vue CLI 5
 - Vue Router 4
 - LocalStorage
-- Fetch API → [DolarAPI](https://dolarapi.com)
+- Fetch API → [DolarAPI](https://dolarapi.com) y [Supabase](https://supabase.com) (base de datos en la nube, plan gratis)
 - Canvas API (logo de puntitos interactivo y achicado de fotos subidas)
 - three.js (placa de video 3D en Nosotros, se carga solo en esa página y solo en computadora)
 - HTML5 + CSS3 (mobile-first, sin frameworks de CSS)
@@ -50,6 +63,14 @@ npm run build      # versión de producción en /dist
 1. Subir el repositorio a GitHub.
 2. En Vercel: **Add New → Project** e importar el repositorio. Vercel detecta Vue CLI (build `npm run build`, salida `dist`).
 3. El archivo `vercel.json` redirige todas las rutas a `index.html`, así funcionan los links directos como `/productos/p04`.
+
+### Base de datos (Supabase)
+
+1. Crear un proyecto gratis en [supabase.com](https://supabase.com).
+2. En **SQL Editor**, pegar y ejecutar `supabase/esquema.sql` (tablas, permisos y funciones) y después `supabase/datos_iniciales.sql` (los 16 productos).
+3. Copiar la URL del proyecto y la clave **publishable** en `src/config/tienda.js` (o como variables `VUE_APP_SUPABASE_URL` y `VUE_APP_SUPABASE_ANON_KEY` en Vercel).
+
+Sin Supabase configurado, la tienda funciona igual guardando todo en LocalStorage (modo demo).
 
 ## Accesos para probar
 
@@ -73,11 +94,41 @@ El pago con tarjeta se hace en el sitio de Mercado Pago mediante un link de pago
 - La contraseña no está escrita en el código: solo se guarda una huella derivada con PBKDF2.
 - La sesión dura 8 horas, se cierra sola después de 30 minutos sin actividad y al cerrar el navegador. Después de 5 intentos fallidos se bloquea 30 segundos, y cada fallo extra duplica la espera (hasta 15 minutos). El bloqueo no se saltea recargando la página.
 
+## Supabase: cómo se protege la base de datos
+
+- El navegador **solo puede leer el catálogo**. Las tablas no se pueden modificar directamente: todo pasa por funciones de la base (`crear_pedido`, `admin_guardar_producto`, etc.) que validan los datos del lado del servidor.
+- Al crear un pedido, la base **recalcula precios, envío y descuento con sus propios datos** (no confía en lo que manda el navegador) y descuenta el stock en la misma operación, así dos personas no pueden comprar la última unidad a la vez.
+- Las funciones del panel piden la clave de la sesión del administrador y la comparan con una huella guardada en un esquema privado que no se publica. Los intentos fallidos se registran por IP.
+- Row Level Security (RLS) activado en todas las tablas.
+
+## Protección contra compras que acaparan el stock
+
+Alguien podría hacer pedidos sin pagar para dejar la tienda sin stock. Para evitarlo (se controla en la tienda y otra vez en la base de datos):
+
+| Regla | Valor |
+|---|---|
+| Unidades máximas del mismo producto por pedido | 2 |
+| Unidades máximas por pedido | 6 |
+| Pedidos sin pagar a la vez con el mismo email | 2 |
+| Pedidos sin pagar a la vez desde la misma conexión (IP) | 3 |
+| Reserva de un pedido sin pagar | 48 horas: después se cancela solo y el stock vuelve a la venta |
+
+Los valores están en `src/config/limites.js` y en `supabase/esquema.sql`.
+
+## Automatizaciones del panel
+
+- Los pedidos sin pagar se cancelan solos a las 48 horas y devuelven el stock.
+- "Para hacer hoy" arriba del panel: pedidos pagados para enviar, pedidos esperando pago, envíos en camino y productos con la última unidad, con un toque para ir a cada lista.
+- El SKU del producto nuevo se propone solo (MT-0001, MT-0002…).
+- Interruptor **Con stock / Sin stock** en la tabla: al apagarlo guarda la cantidad y al prenderlo la recupera.
+- Si un destacado se queda sin stock, en el inicio lo reemplaza otro automáticamente.
+- Las fotos subidas se achican, se les pone fondo blanco y se guardan en WebP. También se puede pegar el link de una foto: se comprueba que abra antes de guardarla.
+
 ## Ingreso con Google
 
 El botón "Continuar con Google" usa **Google Identity Services** (la librería oficial). Google muestra su propia ventana para elegir la cuenta: la contraseña de Google nunca pasa por la página. Si el email ya tenía cuenta, se vincula; si no, se crea con el nombre y la foto de Google.
 
-La página usa un **ID de cliente OAuth** de Google Cloud (`GOOGLE_CLIENT_ID` en `src/config/tienda.js`), autorizado para `https://mono-tecno-tienda.vercel.app` y `http://localhost:8080`. Google solo acepta ingresos desde esas direcciones.
+La página usa un **ID de cliente OAuth** de Google Cloud (`GOOGLE_CLIENT_ID` en `src/config/tienda.js`, proyecto "mono-tecno"), autorizado para `https://mono-tecno-tienda.vercel.app` y `http://localhost:8080`. Google solo acepta ingresos desde esas direcciones. Para publicar la app, la tienda tiene sus páginas de [privacidad](https://mono-tecno-tienda.vercel.app/privacidad) y [condiciones](https://mono-tecno-tienda.vercel.app/terminos).
 
 ## Seguridad
 
@@ -103,7 +154,7 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | Links externos con `rel="noopener noreferrer"` | Que la página abierta controle la pestaña de la tienda o vea de dónde vino |
 | `/.well-known/security.txt` | Que quien encuentre un problema sepa cómo avisar |
 
-**Alcance:** sin un servidor, todo lo que se guarda vive en el navegador de cada persona. Para que los pedidos y las cuentas estén centralizados y protegidos del lado del servidor (y para verificar la firma del token de Google), el paso siguiente sería un backend como Supabase.
+**Alcance:** productos, stock y pedidos están protegidos del lado del servidor con Supabase (ver arriba). Las cuentas de clientes siguen guardadas en cada navegador; el paso siguiente sería pasarlas a Supabase Auth (que además verifica la firma del token de Google).
 
 ## Posicionamiento en Google (SEO)
 
@@ -129,7 +180,8 @@ Lo que hace la página para que no la puedan atacar fácilmente:
 | `/cuenta` | Mi cuenta: mis pedidos y mis datos (requiere sesión) |
 | `/comparar` | Comparador: 2 o 3 productos lado a lado con su ficha técnica, marcando el mejor valor de cada fila |
 | `/arma-tu-pc` | Armá tu PC: elegís procesador, placa de video, memoria, disco, fuente y cooler; avisa si son compatibles y suma el total |
-| `/acerca` | Acerca de / Nosotros, con créditos de las fotos |
+| `/acerca` | Nosotros: placa de video 3D real (se gira con el mouse), servicios y preguntas frecuentes |
+| `/privacidad` · `/terminos` | Política de privacidad y condiciones de uso |
 | `/admin/login` | Ingreso al panel |
 | `/admin` | Panel de administración: productos y pedidos (requiere ingresar) |
 | `/admin/productos/nuevo` | Alta de producto |
@@ -198,7 +250,9 @@ Además, las vistas emiten `notificar` hacia `App.vue`, que muestra el aviso.
 ## Flujo de datos
 
 ```
-LocalStorage ⇄ productosService.js ⇄ Vistas (created) ──props──▶ Componentes
+Supabase (nube) ──fetch──▶ nube.js ──▶ productosService.js ⇄ LocalStorage (copia)
+                                              ⇅
+                                   Vistas (created) ──props──▶ Componentes
                     ▲                       ▲                        │
                     │                       └──────── emits ─────────┘
               carrito.js (reactive) ◀── ProductCard / Detalle / Carrito
@@ -211,21 +265,22 @@ DolarAPI ──fetch──▶ dolarService.js (caché 30 min) ──▶ DolarWid
 1. Las vistas leen y escriben productos solo a través de `productosService.js`.
 2. El carrito es un objeto `reactive` compartido (`services/carrito.js`): cuando una tarjeta agrega un producto, el contador del encabezado se actualiza solo.
 3. Los componentes avisan acciones con **emits** (ej: `ProductCard` emite `agregar`; la vista lo suma al carrito y emite `notificar` para mostrar el aviso).
-4. Al confirmar un pedido se descuenta el stock y el pedido aparece en el panel de administración.
+4. Al confirmar un pedido, la base de datos controla stock, precios y límites, descuenta el stock y el pedido aparece en el panel de administración. El catálogo se vuelve a traer de la nube al abrir la página y cada 2 minutos.
 5. Si la API del dólar no responde, la tienda sigue funcionando con los precios en pesos.
 
 ## Estructura del proyecto
 
 ```
 mono-tecno/
-├── public/              index.html, favicon
+├── public/              index.html, favicon, modelos/rtx-3080.glb (placa 3D), sitemap y robots
+├── supabase/            esquema.sql (tablas, permisos y funciones) y datos_iniciales.sql
 ├── src/
 │   ├── assets/          logos, fotos de productos (productos/*.webp) y estilos globales
 │   ├── components/      16 componentes reutilizables
 │   ├── data/            productos iniciales, categorías y créditos de fotos
 │   ├── router/          rutas (Vue Router)
-│   ├── config/          datos de la tienda: envíos, medios de pago, contraseña del panel
-│   ├── services/        productosService (LocalStorage), carrito, cuentas, google (ingreso con Google), seguridad, precios, auth, imagenes, dolarService (Fetch), comparar, armado (compatibilidad), tema (modo oscuro)
+│   ├── config/          datos de la tienda (envíos, pagos, contraseña del panel, Google, Supabase) y límites de compra
+│   ├── services/        productosService (Supabase + copia en LocalStorage), nube (conexión a Supabase), carrito, cuentas, google (ingreso con Google), seguridad, precios, auth, imagenes, dolarService (Fetch), comparar, armado (compatibilidad), tema (modo oscuro)
 │   ├── views/           Inicio, Catálogo, Detalle, Carrito, Checkout, Pedido, Cuenta (ingresar/registro), Mi cuenta, Comparar, Armá tu PC, Acerca de, Login admin, Admin, Alta/Edición, 404
 │   ├── App.vue
 │   └── main.js
@@ -259,6 +314,7 @@ mono-tecno/
 
 ## Notas
 
+- **Placa 3D**: modelo "GeForce RTX 3080 Graphics Card" de _surovic_ en Sketchfab (CC BY 4.0), comprimido de 12 MB a 1 MB. Crédito en la página y en `CREDITOS.md`.
 - **Fotos**: todas en 1200×900, sobre fondo blanco. La RTX 3060 usa la foto original de mono.tecno; las demás son de Wikimedia Commons con licencias libres, con el fondo quitado (créditos en `CREDITOS.md`). Algunas son ilustrativas de un modelo parecido.
 - **Precios**: los de las placas de video son los que publicaba mono.tecno; los del resto de los productos son de ejemplo.
 - Para volver al catálogo inicial: Panel → "Restaurar el catálogo inicial".
