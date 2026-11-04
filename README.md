@@ -14,7 +14,7 @@ SPA (Single Page Application) orientada a celulares para **mono.tecno**, un serv
 La app tiene dos partes:
 
 - **Cuentas de clientes**: registro e inicio de sesión con email o **con Google**, y "Mi cuenta" con el historial de pedidos (cada pedido anterior se puede abrir, ver los datos de pago y "volver a comprar"); los datos se completan solos al comprar.
-- **Tienda**: catálogo con buscador, filtros y orden, detalle de cada producto, carrito y compra en 3 pasos (datos, entrega y pago) con Mercado Pago, transferencia o efectivo.
+- **Tienda**: catálogo con buscador, filtros y orden, detalle de cada producto, carrito y compra en 3 pasos (datos, entrega y pago). Es una **tienda de práctica**: se elige Mercado Pago, transferencia o efectivo para probar el recorrido, pero no se cobra nada ni se piden datos de pago; el pedido queda registrado y se gestiona desde el panel.
 - **Panel de administración** (`/admin`, con contraseña): alta, edición y baja de productos con foto (subida desde la computadora o por link), control de stock y pedidos con su estado.
 
 Los productos y los pedidos viven en una base de datos en la nube (**Supabase**), a la que la tienda se conecta con **Fetch**. **LocalStorage** guarda una copia para que la página cargue al instante (y funcione igual si la nube no responde), además del carrito y las cuentas. La cotización del dólar se trae en vivo desde DolarAPI para mostrar el precio aproximado en dólares.
@@ -85,7 +85,7 @@ También se puede crear una cuenta nueva desde "Crear cuenta" o entrar con Googl
 
 Todos los datos del negocio están centralizados en `src/config/tienda.js`: contacto (Instagram, WhatsApp, email, zona y horarios), formas de envío con su costo, medios de pago (link de Mercado Pago, datos de transferencia y descuentos), garantía, la huella de la contraseña del panel, la cuenta del dueño y el ID de cliente de Google. Cambiar un dato ahí lo actualiza en toda la página.
 
-El pago con tarjeta se hace en el sitio de Mercado Pago mediante un link de pago: la página no recibe ni guarda datos de tarjetas.
+La página no cobra: es un proyecto de práctica y no pide ni guarda datos de tarjetas o cuentas bancarias.
 
 ## Panel de administración
 
