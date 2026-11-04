@@ -53,7 +53,7 @@ import SearchBar from '../components/SearchBar.vue'
 import ProductCard from '../components/ProductCard.vue'
 import { obtenerProductos } from '../services/productosService'
 import { obtenerCotizaciones } from '../services/dolarService'
-import { agregar } from '../services/carrito'
+import { agregar, motivoNoAgregado } from '../services/carrito'
 import { CATEGORIAS, CONDICIONES } from '../data/productosIniciales'
 
 // Quita tildes y pasa a minúsculas para que la búsqueda sea más tolerante.
@@ -184,6 +184,7 @@ export default {
     },
     agregarAlCarrito (producto) {
       if (agregar(producto)) this.$emit('notificar', { mensaje: `Agregaste “${producto.nombre}” al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })
+      else this.$emit('notificar', { mensaje: motivoNoAgregado(producto), tipo: 'info' })
     }
   }
 }

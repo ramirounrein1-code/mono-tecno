@@ -21,7 +21,7 @@
               <div class="fila__acciones">
                 <QuantityStepper
                   :model-value="item.cantidad"
-                  :max="item.producto.stock"
+                  :max="maximo(item.producto)"
                   :etiqueta="'Cantidad de ' + item.producto.nombre"
                   @update:model-value="cambiar(item.producto.id, $event)"
                 />
@@ -68,7 +68,7 @@
 <script>
 import QuantityStepper from '../components/QuantityStepper.vue'
 import MediosDePago from '../components/MediosDePago.vue'
-import { detalleCarrito, cambiarCantidad, quitar } from '../services/carrito'
+import { detalleCarrito, cambiarCantidad, quitar, maximoPara } from '../services/carrito'
 import { formatearPesos } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
 import { precioConDescuento } from '../services/precios'
@@ -111,6 +111,7 @@ export default {
     }
   },
   methods: {
+    maximo (p) { return maximoPara(p) },
     pesos (v) { return formatearPesos(v) },
     foto (p) { return resolverImagen(p.imagen) },
     cambiar (id, cantidad) { cambiarCantidad(id, cantidad) },
@@ -129,7 +130,7 @@ export default {
 .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; position: relative; }
 .fila { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px 14px; padding: 12px; }
 .fila__foto { width: 88px; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: #fff; border: 1px solid var(--borde); }
-.fila__foto img { width: 100%; height: 100%; object-fit: cover; }
+.fila__foto img { width: 100%; height: 100%; object-fit: contain; }
 .fila__info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .fila__nombre { color: var(--texto); font-weight: 600; line-height: 1.3; }
 .fila__meta { font-size: 13px; color: var(--texto-2); }

@@ -18,6 +18,20 @@
       <div class="tarjeta"><dt>Pedidos</dt><dd>{{ pedidos.length }}</dd></div>
     </dl>
 
+    <!-- Lo que hay que hacer hoy: se arma solo con los pedidos y el stock -->
+    <section v-if="tareas.length" class="tareas tarjeta" aria-labelledby="t-tareas">
+      <h2 id="t-tareas">Para hacer hoy</h2>
+      <ul>
+        <li v-for="t in tareas" :key="t.id">
+          <button type="button" class="tareas__item" @click="irA(t)">
+            <span :class="['tareas__num', 'tareas__num--' + t.tono]">{{ t.cantidad }}</span>
+            <span>{{ t.texto }}</span>
+          </button>
+        </li>
+      </ul>
+      <p class="tareas__nota">Los pedidos sin pagar se cancelan solos a las {{ horasReserva }} h y su stock vuelve a la venta.</p>
+    </section>
+
     <div class="tabs" role="tablist" aria-label="Secciones del panel">
       <button id="tab-productos" type="button" role="tab" :aria-selected="pestana === 'productos' ? 'true' : 'false'" aria-controls="panel-productos" @click="pestana = 'productos'">Productos</button>
       <button id="tab-pedidos" type="button" role="tab" :aria-selected="pestana === 'pedidos' ? 'true' : 'false'" aria-controls="panel-pedidos" @click="pestana = 'pedidos'">Pedidos ({{ pedidos.length }})</button>
@@ -65,11 +79,11 @@
                 <td>{{ p.condicion }}</td>
                 <td class="num">{{ pesos(p.precio) }}</td>
                 <td class="num">
-                  <div class="stock-rapido">
-                    <button type="button" :aria-label="'Restar una unidad de ' + p.nombre" :disabled="p.stock === 0" @click="cambiarStock(p, -1)">−</button>
-                    <span :class="['stock', { 'stock--cero': p.stock === 0 }]" aria-live="polite">{{ p.stock }}</span>
-                    <button type="button" :aria-label="'Sumar una unidad de ' + p.nombre" @click="cambiarStock(p, 1)">+</button>
-                  </div>
+                  <!-- Interruptor Con stock / Sin stock: al apagarlo guarda la cantidad y al prenderlo la recupera -->
+                  <button type="button" role="switch" :aria-checked="p.stock > 0 ? 'true' : 'false'" :class="['interruptor', { prendido: p.stock > 0 }]" :aria-label="'Stock de ' + p.nombre" @click="cambiarDisponible(p)">
+                    <span class="interruptor__pista" aria-hidden="true"><span class="interruptor__bola"></span></span>
+                    <span class="interruptor__texto">{{ p.stock > 0 ? `Con stock (${p.stock})` : 'Sin stock' }}</span>
+                  </button>
                 </td>
                 <td>
                   <div class="tabla__acciones">
@@ -158,7 +172,8 @@
 
 <script>
 import ConfirmModal from '../components/ConfirmModal.vue'
-import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, actualizarEstadoPedido, eliminarPedido, ajustarStock, alternarDestacado, ESTADOS_PEDIDO, ESTADOS_FINALIZADOS } from '../services/productosService'
+import { LIMITES_PEDIDO } from '../config/limites'
+import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, sincronizarPedidosAdmin, sincronizarCatalogo, catalogo, actualizarEstadoPedido, eliminarPedido, alternarDisponible, alternarDestacado, ESTADOS_PEDIDO, ESTADOS_FINALIZADOS } from '../services/productosService'
 import { cerrarSesion } from '../services/auth'
 import { formatearPesos } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
@@ -172,11 +187,13 @@ export default {
   emits: ['notificar'],
   data () {
     return {
+      catalogo,
       productos: [],
       pedidos: [],
       busqueda: '',
       orden: 'recientes',
       pestana: 'productos',
+      horasReserva: LIMITES_PEDIDO.horasReserva,
       aEliminar: null,
       confirmarRestaurar: false,
       pedidoAEliminar: null,
@@ -219,19 +236,61 @@ export default {
     sinStock () {
       return this.productos.filter((p) => p.stock === 0).length
     },
+    // Pendientes armados solos a partir de los pedidos y el stock.
+    tareas () {
+      const pagados = this.pedidos.filter((p) => p.estado === 'Pagado').length
+      const esperando = this.pedidos.filter((p) => p.estado === 'Pendiente de pago').length
+      const enviados = this.pedidos.filter((p) => p.estado === 'Enviado').length
+      const ultimas = this.productos.filter((p) => p.stock === 1).length
+      return [
+        { id: 'pagados', cantidad: pagados, texto: pagados === 1 ? 'pedido pagado para preparar y enviar' : 'pedidos pagados para preparar y enviar', tono: 'urgente', pestana: 'pedidos' },
+        { id: 'esperando', cantidad: esperando, texto: esperando === 1 ? 'pedido esperando el pago' : 'pedidos esperando el pago', tono: 'info', pestana: 'pedidos' },
+        { id: 'enviados', cantidad: enviados, texto: enviados === 1 ? 'envío en camino: marcalo entregado cuando llegue' : 'envíos en camino: marcalos entregados cuando lleguen', tono: 'info', pestana: 'pedidos' },
+        { id: 'ultimas', cantidad: ultimas, texto: ultimas === 1 ? 'producto con la última unidad' : 'productos con la última unidad', tono: 'aviso', pestana: 'productos', orden: 'stock' }
+      ].filter((t) => t.cantidad > 0)
+    },
     valorStock () {
       return formatearPesos(this.productos.reduce((t, p) => t + p.precio * p.stock, 0))
     }
   },
   created () {
     this.cargar()
+    this.actualizarDesdeNube()
+  },
+  watch: {
+    // Cuando llega el catálogo nuevo de la nube, la tabla se actualiza sola.
+    'catalogo.version' () { this.productos = obtenerProductos() }
   },
   methods: {
     cargar () {
       this.productos = obtenerProductos()
       this.pedidos = obtenerPedidos()
     },
+    // Trae de la nube los pedidos y el stock al día (y cancela solos los pedidos vencidos).
+    async actualizarDesdeNube () {
+      try {
+        await Promise.all([sincronizarPedidosAdmin(), sincronizarCatalogo()])
+        this.cargar()
+      } catch (e) {
+        this.$emit('notificar', { mensaje: e.message, tipo: 'info' })
+      }
+    },
+    // Ejecuta un cambio del panel y muestra el error si la base lo rechaza.
+    async probar (accion) {
+      try {
+        return await accion()
+      } catch (e) {
+        this.$emit('notificar', { mensaje: e.message, tipo: 'info' })
+        return undefined
+      }
+    },
     pesos (v) { return formatearPesos(v) },
+    // Desde "Para hacer hoy" lleva a la lista que corresponde.
+    irA (t) {
+      this.pestana = t.pestana
+      if (t.pestana === 'pedidos') this.filtroPedidos = 'activos'
+      if (t.orden) this.orden = t.orden
+    },
     foto (p) { return resolverImagen(p.imagen) },
     fecha (iso) {
       return new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
@@ -242,10 +301,11 @@ export default {
     claseEstado (e) {
       return (e || '').toLowerCase().replace(/\s+/g, '-')
     },
-    cambiarEstado (ped, estado) {
+    async cambiarEstado (ped, estado) {
       const antes = ped.estado
-      actualizarEstadoPedido(ped.numero, estado)
+      const r = await this.probar(() => actualizarEstadoPedido(ped.numero, estado))
       this.cargar()
+      if (!r) return
       let extra = ''
       if (ESTADOS_FINALIZADOS.includes(estado) && this.filtroPedidos === 'activos') extra = ' Pasó a "Finalizados".'
       if (estado === 'Cancelado') extra += ' Sus productos volvieron a estar a la venta.'
@@ -253,17 +313,22 @@ export default {
       this.$emit('notificar', { mensaje: `Pedido #${ped.numero}: ${estado}.${extra}`, tipo: 'info' })
     },
     // Atajos de la tabla: se guardan al instante, sin entrar a "Editar".
-    cambiarStock (p, cambio) {
-      p.stock = ajustarStock(p.id, cambio)
+    async cambiarDisponible (p) {
+      const stock = await this.probar(() => alternarDisponible(p.id))
+      if (stock === undefined || stock === null) return
+      p.stock = stock
+      this.$emit('notificar', { mensaje: p.stock > 0 ? `“${p.nombre}” volvió a la venta con ${p.stock} ${p.stock === 1 ? 'unidad' : 'unidades'}.` : `“${p.nombre}” quedó sin stock y no se puede comprar.`, tipo: 'info' })
     },
-    cambiarDestacado (p) {
-      p.destacado = alternarDestacado(p.id)
+    async cambiarDestacado (p) {
+      const d = await this.probar(() => alternarDestacado(p.id))
+      if (d === undefined || d === null) return
+      p.destacado = d
       this.$emit('notificar', { mensaje: p.destacado ? `“${p.nombre}” se muestra en Destacados del inicio.` : `“${p.nombre}” ya no está en Destacados.`, tipo: 'info' })
     },
-    borrarPedido () {
+    async borrarPedido () {
       const n = this.pedidoAEliminar.numero
-      eliminarPedido(n)
       this.pedidoAEliminar = null
+      if (!(await this.probar(() => eliminarPedido(n)))) return
       this.cargar()
       this.$emit('notificar', { mensaje: `Se borró el pedido #${n}.` })
     },
@@ -272,17 +337,17 @@ export default {
       this.$router.push({ name: 'inicio' })
       this.$emit('notificar', { mensaje: 'Cerraste sesión.', tipo: 'info' })
     },
-    eliminar () {
+    async eliminar () {
       const { id, nombre } = this.aEliminar
-      eliminarProducto(id)
-      quitar(id) // si estaba en el carrito, se saca
       this.aEliminar = null
+      if ((await this.probar(async () => { await eliminarProducto(id); return true })) !== true) return
+      quitar(id) // si estaba en el carrito, se saca
       this.cargar()
       this.$emit('notificar', { mensaje: `“${nombre}” se eliminó del catálogo.` })
     },
-    restaurar () {
-      restaurarProductos()
+    async restaurar () {
       this.confirmarRestaurar = false
+      if (!(await this.probar(() => restaurarProductos()))) return
       this.cargar()
       this.$emit('notificar', { mensaje: 'Se restauró el catálogo inicial.', tipo: 'info' })
     }
@@ -358,15 +423,19 @@ export default {
 .tabla tr:last-child td { border-bottom: 0; }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tabla__producto { display: flex; align-items: center; gap: 12px; }
-.tabla__producto img { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--borde); background: #fff; flex: none; }
+.tabla__producto img { width: 64px; height: 48px; object-fit: contain; border-radius: 8px; border: 1px solid var(--borde); background: #fff; flex: none; }
 .tabla__nombre { color: var(--texto); font-weight: 600; }
 .tabla__sku { display: block; font-size: 12px; color: var(--texto-2); }
 .stock { display: inline-block; min-width: 28px; padding: 2px 8px; border-radius: 999px; background: #e7f4ec; color: var(--exito); font-weight: 600; text-align: center; }
 .stock--cero { background: #fdecea; color: var(--error); }
-.stock-rapido { display: inline-flex; align-items: center; gap: 6px; }
-.stock-rapido button { width: 32px; height: 32px; border: 1px solid var(--borde); border-radius: 8px; background: var(--papel); font: inherit; font-size: 18px; line-height: 1; color: var(--texto); cursor: pointer; }
-.stock-rapido button:hover:not(:disabled) { border-color: var(--navy); }
-.stock-rapido button:disabled { color: #c9c3c5; cursor: not-allowed; }
+.interruptor { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; color: var(--texto); cursor: pointer; white-space: nowrap; }
+.interruptor__pista { position: relative; width: 40px; height: 24px; border-radius: 999px; background: var(--borde); transition: background 0.2s ease; flex: none; }
+.interruptor__bola { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.2s ease; }
+.interruptor.prendido .interruptor__pista { background: var(--exito); }
+.interruptor.prendido .interruptor__bola { transform: translateX(16px); }
+.interruptor:not(.prendido) .interruptor__texto { color: var(--error); font-weight: 600; }
+.interruptor:focus-visible { outline: 2px solid var(--magenta); outline-offset: 3px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { .interruptor__pista, .interruptor__bola { transition: none; } }
 .tabla__estrella { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--borde); border-radius: 10px; background: var(--papel); color: #b9b3b5; cursor: pointer; }
 .tabla__estrella.activa { color: #e0a100; border-color: #f1d27a; background: #fff8e1; }
 /* Pedidos: al pasar a Finalizados (o borrarse) la tarjeta se desvanece y las demás suben suave */
@@ -415,4 +484,13 @@ export default {
   .admin { padding-top: 40px; }
   .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+.tareas { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.tareas h2 { margin: 0; font-size: 17px; }
+.tareas ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.tareas__item { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px 6px 6px; border: 1px solid var(--borde); border-radius: 999px; background: var(--fondo); color: var(--texto); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.tareas__item:hover { border-color: var(--texto-2); }
+.tareas__num { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--borde); }
+.tareas__num--urgente { background: var(--magenta); color: #fff; }
+.tareas__num--aviso { background: #f2c14e; color: #3a2a00; }
+.tareas__nota { margin: 0; font-size: 13px; color: var(--texto-2); }
 </style>

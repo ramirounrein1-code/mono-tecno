@@ -2,7 +2,7 @@
   <div class="contenedor armado">
     <header class="armado__cabecera">
       <h1 class="titulo-seccion">Armá tu PC</h1>
-      <p class="texto-sec">Elegí cada pieza y te avisamos al momento si algo no es compatible. Al final podés llevar todo al carrito de una.</p>
+      <p class="texto-sec">Empezá por la pieza que quieras y te avisamos al momento si algo no es compatible. Al final podés llevar todo al carrito de una.</p>
     </header>
 
     <div class="armado__grilla">
@@ -89,8 +89,8 @@ export default {
   emits: ['notificar'],
   data () {
     return {
-      // Pieza desplegada: arranca en la primera que falte elegir
-      abierto: (LUGARES.find((l) => !armado.sel[l.id]) || LUGARES[0]).id,
+      // Pieza desplegada: arrancan todas cerradas y se empieza por la que quieras
+      abierto: null,
       armado,
       lugares: LUGARES,
       iconos: { ok: '✓', error: '!', aviso: '!', info: 'i', pendiente: '·' },
@@ -130,13 +130,6 @@ export default {
       const i = LUGARES.findIndex((l) => l.id === lugar)
       const siguiente = LUGARES.slice(i + 1).find((l) => !armado.sel[l.id])
       this.abierto = siguiente ? siguiente.id : null
-      // Lleva la vista hasta la pieza que se abrió (después de la animación)
-      if (siguiente) {
-        setTimeout(() => {
-          const boton = this.$el.querySelector(`[aria-controls="panel-${siguiente.id}"]`)
-          if (boton) boton.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
-        }, 300)
-      }
     },
     estadoElegido (l) {
       const p = this.elegidos[l.id]
@@ -147,7 +140,7 @@ export default {
       const piezas = Object.values(this.elegidos).filter(Boolean)
       const agregadas = piezas.filter((p) => agregar(p)).length
       if (agregadas) this.$emit('notificar', { mensaje: `Agregaste ${agregadas} ${agregadas === 1 ? 'pieza' : 'piezas'} al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })
-      else this.$emit('notificar', { mensaje: 'Ya tenés en el carrito todas las unidades disponibles.', tipo: 'info' })
+      else this.$emit('notificar', { mensaje: 'No se pudo sumar ninguna pieza: ya están en el carrito o llegaste al máximo por pedido.', tipo: 'info' })
     }
   }
 }
@@ -194,7 +187,7 @@ export default {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .opcion:hover:not(:disabled) { border-color: var(--borde); }
-.opcion img { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; background: #fff; }
+.opcion img { width: 64px; height: 48px; object-fit: contain; border-radius: 8px; background: #fff; }
 .opcion--activa { border-color: var(--magenta); background: var(--papel); box-shadow: inset 4px 0 0 var(--magenta); }
 .opcion--error:not(.opcion--activa) img { opacity: 0.55; }
 .opcion--error.opcion--activa { border-color: var(--error); box-shadow: inset 4px 0 0 var(--error); }

@@ -51,7 +51,7 @@ import { comparacion, quitarDeComparacion, limpiarComparacion } from '../service
 import { obtenerProductos } from '../services/productosService'
 import { resolverImagen } from '../services/imagenes'
 import { formatearPesos } from '../services/dolarService'
-import { agregar } from '../services/carrito'
+import { agregar, motivoNoAgregado } from '../services/carrito'
 
 // Para estas filas se marca el mejor valor: 'max' = más es mejor, 'min' = menos es mejor.
 const CRITERIOS = [
@@ -118,7 +118,7 @@ export default {
     limpiar () { limpiarComparacion() },
     agregarAlCarrito (p) {
       if (agregar(p)) this.$emit('notificar', { mensaje: `Agregaste “${p.nombre}” al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })
-      else this.$emit('notificar', { mensaje: 'Ya tenés en el carrito todas las unidades disponibles.', tipo: 'info' })
+      else this.$emit('notificar', { mensaje: motivoNoAgregado(p), tipo: 'info' })
     }
   }
 }
@@ -143,7 +143,7 @@ thead .tabla__dato { z-index: 2; }
 .tabla__producto { position: relative; font-weight: 400; }
 .tabla__producto > * { display: block; }
 .tabla__foto { aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: #fff; border: 1px solid var(--borde); margin-bottom: 10px; }
-.tabla__foto img { width: 100%; height: 100%; object-fit: cover; }
+.tabla__foto img { width: 100%; height: 100%; object-fit: contain; }
 .tabla__nombre { color: var(--texto); font-weight: 600; font-size: 15px; line-height: 1.3; min-height: 2.6em; }
 .tabla__precio { font-size: 20px; font-weight: 650; margin: 6px 0 10px; font-variant-numeric: tabular-nums; }
 .tabla__agregar { width: 100%; }

@@ -92,7 +92,7 @@
 </template>
 
 <script>
-import { obtenerPedido } from '../services/productosService'
+import { obtenerPedido, actualizarPedidosLocales } from '../services/productosService'
 import { formatearPesos } from '../services/dolarService'
 import { TIENDA } from '../config/tienda'
 import { sesion, puedeVerPedido } from '../services/cuentas'
@@ -153,6 +153,7 @@ export default {
     }
   },
   async created () {
+    await actualizarPedidosLocales()
     const p = obtenerPedido(this.numero)
     // Privacidad: solo ve el pedido su dueño (o el admin). A cualquier otro le decimos que no existe.
     this.pedido = puedeVerPedido(p, await estaLogueado()) ? p : null

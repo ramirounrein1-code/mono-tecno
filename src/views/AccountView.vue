@@ -72,6 +72,7 @@
 
 <script>
 import { sesion, cerrarSesion, actualizarPerfil, pedidosDelUsuario, esDuenio } from '../services/cuentas'
+import { actualizarPedidosLocales } from '../services/productosService'
 import { formatearPesos } from '../services/dolarService'
 
 export default {
@@ -96,7 +97,10 @@ export default {
       return ((this.usuario.nombre[0] || '') + (this.usuario.apellido[0] || '')).toUpperCase()
     }
   },
-  created () {
+  async created () {
+    this.pedidos = pedidosDelUsuario()
+    // Trae de la nube el estado al día de esos pedidos (pagado, enviado...).
+    await actualizarPedidosLocales()
     this.pedidos = pedidosDelUsuario()
   },
   methods: {

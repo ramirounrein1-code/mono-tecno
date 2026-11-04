@@ -176,7 +176,8 @@
               <p v-if="errores.acepta" id="e-acepta" class="campo__error campo--ancho">{{ errores.acepta }}</p>
 
               <div class="paso__acciones">
-                <button type="submit" class="btn btn--primario btn--grande" @mousedown.prevent>Confirmar compra · {{ pesos(totales.total) }}</button>
+                <p v-if="errorEnvio" class="checkout__error" role="alert">{{ errorEnvio }}</p>
+                <button type="submit" class="btn btn--primario btn--grande" :disabled="enviando" @mousedown.prevent>{{ enviando ? 'Confirmando…' : 'Confirmar compra · ' + pesos(totales.total) }}</button>
               </div>
             </div>
           </transition>
@@ -236,6 +237,8 @@ export default {
     const deCuenta = u ? { nombre: u.nombre, apellido: u.apellido, email: u.email, telefono: u.telefono, ...(u.dni ? { dni: u.dni } : {}) } : {}
     return {
       usuario: u,
+      enviando: false,
+      errorEnvio: '',
       paso: 1,
       nombresPasos: ['Datos', 'Entrega', 'Pago'],
       envios: TIENDA.envios,
@@ -274,13 +277,6 @@ export default {
     // El efectivo solo se puede usar retirando en persona.
     'entrega.tipo' (tipo) {
       if (tipo !== 'retiro' && this.pago === 'efectivo') this.pago = 'mercadoPago'
-    },
-    // Al cambiar de paso, la página se desplaza hasta el paso actual.
-    paso () {
-      setTimeout(() => {
-        const actual = this.$el.querySelectorAll('.paso')[this.paso - 1]
-        if (actual) actual.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 250)
     }
   },
   async mounted () {
@@ -373,22 +369,32 @@ export default {
     siguiente (campos) {
       if (this.validarVarios(campos)) this.paso++
     },
-    confirmar () {
-      if (this.paso !== 3) return
+    async confirmar () {
+      if (this.paso !== 3 || this.enviando) return
       if (!this.validarVarios(['pago', 'acepta'])) return
+      this.errorEnvio = ''
       // Guardamos los datos del cliente para la próxima compra en este navegador.
       try {
         localStorage.setItem('monotecno_cliente', JSON.stringify({ datos: this.datos, entrega: this.entrega }))
       } catch (e) { /* no es grave */ }
 
-      const pedido = registrarPedido({
-        items: this.items.map((i) => ({ id: i.producto.id, nombre: i.producto.nombre, precio: i.producto.precio, cantidad: i.cantidad })),
-        ...this.totales,
-        cliente: { ...this.datos },
-        entrega: { ...this.entrega, descripcion: this.textoEntrega },
-        pago: this.pago,
-        usuario: this.usuario ? this.usuario.email : null
-      })
+      this.enviando = true
+      let pedido
+      try {
+        // Con la nube, la base de datos vuelve a controlar stock, precios y límites antes de aceptar el pedido.
+        pedido = await registrarPedido({
+          items: this.items.map((i) => ({ id: i.producto.id, nombre: i.producto.nombre, precio: i.producto.precio, cantidad: i.cantidad })),
+          ...this.totales,
+          cliente: { ...this.datos },
+          entrega: { ...this.entrega, descripcion: this.textoEntrega },
+          pago: this.pago,
+          usuario: this.usuario ? this.usuario.email : null
+        })
+      } catch (e) {
+        this.errorEnvio = e.message
+        this.enviando = false
+        return
+      }
       if (!this.usuario) recordarPedidoInvitado(pedido.numero)
       vaciar()
       this.$router.push({ name: 'pedido', params: { numero: pedido.numero }, query: { nuevo: '1' } })
@@ -467,12 +473,13 @@ export default {
 .paso__acciones { display: flex; justify-content: flex-end; }
 .paso__acciones .btn { width: 100%; }
 .btn--grande { min-height: 54px; font-size: 16px; }
+.checkout__error { margin: 0 0 10px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--error) 12%, transparent); color: var(--error); font-size: 14px; font-weight: 600; }
 
 .resumen { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
 .resumen h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .resumen__items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .resumen__items li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; }
-.resumen__items img { width: 56px; height: 42px; object-fit: cover; border-radius: 8px; border: 1px solid var(--borde); background: #fff; }
+.resumen__items img { width: 56px; height: 42px; object-fit: contain; border-radius: 8px; border: 1px solid var(--borde); background: #fff; }
 .resumen__precio { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .resumen__lineas { margin: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--borde); }
 .resumen__lineas div { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }

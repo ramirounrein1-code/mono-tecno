@@ -58,14 +58,14 @@ export default {
     }
   },
   methods: {
-    guardar (datos) {
+    async guardar (datos) {
       this.errorGuardado = ''
       try {
         if (this.esEdicion) {
-          actualizarProducto(this.id, datos)
+          await actualizarProducto(this.id, datos)
           this.$emit('notificar', { mensaje: `Guardaste los cambios de “${datos.nombre}”.` })
         } else {
-          crearProducto(datos)
+          await crearProducto(datos)
           this.$emit('notificar', { mensaje: `“${datos.nombre}” ya está publicado en la tienda.` })
         }
         this.$router.push({ name: 'admin' })

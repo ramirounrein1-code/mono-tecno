@@ -35,7 +35,7 @@
             <QuantityStepper v-model="cantidad" :max="disponible" etiqueta="Cantidad a agregar" />
             <button type="button" class="btn btn--primario" @click="agregarAlCarrito">Agregar al carrito</button>
           </div>
-          <p v-else-if="producto.stock > 0" class="detalle__aviso">Ya tenés todas las unidades disponibles en tu carrito. <router-link to="/carrito">Ver carrito</router-link></p>
+          <p v-else-if="producto.stock > 0" class="detalle__aviso">{{ avisoLimite }} <router-link to="/carrito">Ver carrito</router-link></p>
           <a v-else class="btn btn--fantasma" href="https://instagram.com/mono.tecno" target="_blank" rel="noopener noreferrer">Avisame cuando vuelva (Instagram)</a>
         </div>
 
@@ -115,7 +115,8 @@ import { obtenerProducto, obtenerProductos } from '../services/productosService'
 import { obtenerCotizaciones, formatearPesos, formatearDolares } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
 import { aplicarSeo, datosProducto } from '../services/seo'
-import { carrito, agregar } from '../services/carrito'
+import { carrito, agregar, maximoPara, motivoNoAgregado, cantidadTotal } from '../services/carrito'
+import { LIMITES_PEDIDO } from '../config/limites'
 
 export default {
   name: 'ProductDetailView',
@@ -166,8 +167,11 @@ export default {
     // Unidades que todavía se pueden agregar (stock menos lo que ya está en el carrito).
     disponible () {
       const item = carrito.items.find((i) => i.id === this.producto.id)
-      return this.producto.stock - (item ? item.cantidad : 0)
+      const enCarrito = item ? item.cantidad : 0
+      // Respeta el stock y los límites por pedido (hasta 2 de cada producto y 6 en total)
+      return Math.max(0, Math.min(maximoPara(this.producto) - enCarrito, LIMITES_PEDIDO.porPedido - cantidadTotal()))
     },
+    avisoLimite () { return motivoNoAgregado(this.producto) },
     textoStock () {
       if (this.producto.stock === 0) return 'Sin stock por ahora'
       if (this.producto.stock === 1) return 'Última unidad disponible'
@@ -222,6 +226,8 @@ export default {
       if (n) {
         this.$emit('notificar', { mensaje: `Agregaste ${n} × “${this.producto.nombre}” al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })
         this.cantidad = 1
+      } else {
+        this.$emit('notificar', { mensaje: motivoNoAgregado(this.producto), tipo: 'info' })
       }
     }
   }
@@ -244,7 +250,7 @@ export default {
   background: #fff;
   color: #0b0b2a;
 }
-.detalle__imagen img { width: 100%; height: 100%; object-fit: cover; }
+.detalle__imagen img { width: 100%; height: 100%; object-fit: contain; }
 .detalle__imagen figcaption {
   position: absolute;
   right: 10px;
@@ -341,7 +347,7 @@ export default {
 .comparar__opcion.activa { border-color: var(--magenta); background: var(--papel); }
 .comparar__opcion.bloqueada { opacity: 0.5; cursor: not-allowed; }
 .comparar__opcion input { width: 18px; height: 18px; accent-color: var(--magenta); margin: 0; }
-.comparar__opcion img { width: 48px; height: 36px; object-fit: cover; border-radius: 6px; background: #fff; }
+.comparar__opcion img { width: 48px; height: 36px; object-fit: contain; border-radius: 6px; background: #fff; }
 .comparar__nombre { font-size: 14px; font-weight: 600; }
 .comparar__precio { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .comparar__ir { align-self: flex-start; }

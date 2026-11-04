@@ -88,7 +88,7 @@ import CategoryIcon from '../components/CategoryIcon.vue'
 import DolarWidget from '../components/DolarWidget.vue'
 import LogoParticles from '../components/LogoParticles.vue'
 import { obtenerProductos } from '../services/productosService'
-import { agregar } from '../services/carrito'
+import { agregar, motivoNoAgregado } from '../services/carrito'
 import { CATEGORIAS } from '../data/productosIniciales'
 import logoCirculo from '../assets/logo-circulo.png'
 
@@ -130,6 +130,7 @@ export default {
   methods: {
     agregarAlCarrito (producto) {
       if (agregar(producto)) this.$emit('notificar', { mensaje: `Agregaste “${producto.nombre}” al carrito.`, accion: { texto: 'Ver carrito', to: '/carrito' } })
+      else this.$emit('notificar', { mensaje: motivoNoAgregado(producto), tipo: 'info' })
     }
   }
 }

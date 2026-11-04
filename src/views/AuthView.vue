@@ -12,7 +12,7 @@
         <form v-if="modo === 'ingresar'" key="ingresar" class="auth__form" novalidate @submit.prevent="ingresar">
           <h1>Hola de nuevo</h1>
           <p class="texto-sec">Ingresá para ver tus pedidos y comprar más rápido.</p>
-          <GoogleButton :texto="'signin_with'" @ingreso="conGoogle" @error="errorGoogle" />
+          <GoogleButton :texto="'continue_with'" @ingreso="conGoogle" @error="errorGoogle" />
           <div class="auth__o" aria-hidden="true"><span>o con tu email</span></div>
           <div class="campo">
             <label for="a-email">Email</label>
@@ -39,7 +39,7 @@
         <form v-else key="registro" class="auth__form" novalidate @submit.prevent="crearCuenta">
           <h1>Creá tu cuenta</h1>
           <p class="texto-sec">Guardamos tus datos para la próxima compra y podés seguir tus pedidos.</p>
-          <GoogleButton :texto="'signup_with'" @ingreso="conGoogle" @error="errorGoogle" />
+          <GoogleButton :texto="'continue_with'" @ingreso="conGoogle" @error="errorGoogle" />
           <div class="auth__o" aria-hidden="true"><span>o con tu email</span></div>
           <div class="auth__fila">
             <div class="campo">
