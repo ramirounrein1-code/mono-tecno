@@ -133,13 +133,11 @@ export default {
     },
     preguntas () {
       const t = this.tienda
-      const desc = Math.round(t.pagos.transferencia.descuento * 100)
       return [
         { p: '¿Las placas usadas tienen garantía?', r: 'Sí. Todas las placas usadas tienen 3 meses de garantía de mono.tecno, y antes de publicarlas pasan por la revisión de temperaturas, conectores, rendimiento y limpieza.' },
         { p: '¿Hacen envíos?', r: `Sí. Podés retirar gratis en ${t.zona}, pedir envío en moto a zona oeste y CABA (${formatearPesos(t.envios[1].costo)}) o envío por correo a todo el país (${formatearPesos(t.envios[2].costo)}).` },
-        { p: '¿Cómo pago?', r: `Con Mercado Pago (tarjetas o dinero en cuenta), transferencia bancaria o efectivo al retirar. Pagando por transferencia o en efectivo tenés ${desc} % de descuento.` },
+        { p: '¿Cómo pago?', r: 'mono.tecno es una tienda de práctica: al comprar podés elegir Mercado Pago, transferencia o efectivo para probar el recorrido, pero no se cobra nada ni se piden datos de pago.' },
         { p: '¿Necesito crear una cuenta para comprar?', r: 'No. Podés comprar como invitado. Con una cuenta (o entrando con Google) tus datos se completan solos y podés ver tus pedidos anteriores.' },
-        { p: '¿Cuánto tiempo tengo para transferir?', r: 'Tenés 48 horas. Después de ese plazo los productos vuelven a estar a la venta.' },
         { p: '¿Me arman una PC con mi presupuesto?', r: 'Sí. Escribinos por Instagram contándonos qué uso le vas a dar y cuánto querés gastar, y te pasamos opciones.' }
       ]
     }

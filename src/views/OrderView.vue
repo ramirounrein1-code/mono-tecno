@@ -31,33 +31,9 @@
         <section class="tarjeta pago" aria-labelledby="pago-titulo">
           <h2 id="pago-titulo">{{ tituloPago }}</h2>
 
-          <template v-if="pedido.pago === 'mercadoPago'">
-            <p>Pagá <strong>{{ pesos(pedido.total) }}</strong> con tarjeta de crédito, débito o dinero en cuenta en el sitio seguro de Mercado Pago.</p>
-            <a v-if="linkMP" :href="linkMP" target="_blank" rel="noopener noreferrer" class="btn btn--primario pago__btn">Pagar con Mercado Pago</a>
-            <p v-else class="pago__aviso">En unos minutos te mandamos el link de pago por WhatsApp o Instagram al {{ pedido.cliente.telefono }}.</p>
-            <p class="texto-sec pago__nota">Cuando se acredite el pago te escribimos para coordinar la entrega.</p>
-          </template>
-
-          <template v-else-if="pedido.pago === 'transferencia'">
-            <p>Transferí <strong>{{ pesos(pedido.total) }}</strong> a esta cuenta y mandanos el comprobante indicando el pedido <strong>#{{ pedido.numero }}</strong>.</p>
-            <dl class="cuenta">
-              <div v-for="dato in datosCuenta" :key="dato.etiqueta">
-                <dt>{{ dato.etiqueta }}</dt>
-                <dd>
-                  <span class="cuenta__valor">{{ dato.valor }}</span>
-                  <button v-if="dato.copiable" type="button" class="cuenta__copiar" @click="copiar(dato.valor, dato.etiqueta)">{{ copiado === dato.etiqueta ? 'Copiado' : 'Copiar' }}</button>
-                </dd>
-              </div>
-            </dl>
-            <a :href="linkInstagram" target="_blank" rel="noopener noreferrer" class="btn btn--primario pago__btn">Enviar comprobante por Instagram</a>
-            <p class="texto-sec pago__nota">Tenés 48 h para transferir. Después de ese plazo los productos vuelven a estar a la venta.</p>
-          </template>
-
-          <template v-else>
-            <p>Pagás <strong>{{ pesos(pedido.total) }}</strong> en efectivo cuando retirás en {{ zona }}.</p>
-            <p class="texto-sec pago__nota">Te escribimos al {{ pedido.cliente.telefono }} para coordinar día y horario ({{ horarios }}).</p>
-            <a :href="linkInstagram" target="_blank" rel="noopener noreferrer" class="btn btn--fantasma pago__btn">Escribirnos por Instagram</a>
-          </template>
+          <!-- Tienda de práctica: no hay pagos reales -->
+          <p>Este pedido es de prueba: <strong>no tenés que pagar nada</strong>. mono.tecno es un proyecto de práctica y no cobra ni pide datos de pago.</p>
+          <p class="texto-sec pago__nota">El pedido quedó registrado con el medio que elegiste ({{ nombrePago }}) y se ve en el panel de administración, donde se le cambia el estado.</p>
         </section>
 
         <!-- Resumen -->
@@ -111,7 +87,6 @@ export default {
       pedido: null,
       cargado: false,
       copiado: '',
-      linkMP: TIENDA.pagos.mercadoPago.link,
       zona: TIENDA.zona,
       horarios: TIENDA.horarios,
       linkInstagram: `https://ig.me/m/${TIENDA.instagram}`
@@ -129,17 +104,10 @@ export default {
       return new Date(this.pedido.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     },
     tituloPago () {
-      return { mercadoPago: 'Pagá con Mercado Pago', transferencia: 'Datos para la transferencia', efectivo: 'Pago en efectivo al retirar' }[this.pedido.pago]
+      return 'Pedido de prueba'
     },
-    datosCuenta () {
-      const t = TIENDA.pagos.transferencia
-      return [
-        { etiqueta: 'Monto', valor: formatearPesos(this.pedido.total), copiable: false },
-        { etiqueta: 'Alias', valor: t.alias, copiable: true },
-        { etiqueta: 'CBU / CVU', valor: t.cbu, copiable: true },
-        { etiqueta: 'Titular', valor: t.titular, copiable: false },
-        { etiqueta: 'Banco', valor: t.banco, copiable: false }
-      ]
+    nombrePago () {
+      return { mercadoPago: 'Mercado Pago', transferencia: 'transferencia', efectivo: 'efectivo al retirar' }[this.pedido.pago] || 'sin elegir'
     },
     textoPedido () {
       const p = this.pedido

@@ -140,13 +140,14 @@
           </header>
           <transition name="paso">
             <div v-if="paso === 3" class="campos">
+              <p class="demo campo--ancho" role="note">Tienda de práctica: elegí un medio de pago para probar, pero <strong>no se cobra nada</strong> ni se piden datos de tarjeta.</p>
               <fieldset class="opciones campo--ancho">
                 <legend class="sr-only">Medio de pago</legend>
                 <label :class="['opcion', { 'opcion--activa': pago === 'mercadoPago' }]">
                   <input v-model="pago" type="radio" name="pago" value="mercadoPago">
                   <span class="opcion__texto">
                     <strong>Mercado Pago</strong>
-                    <span>Tarjeta de crédito, débito o dinero en cuenta. Pagás en el sitio seguro de Mercado Pago.</span>
+                    <span>Tarjeta o dinero en cuenta (de prueba).</span>
                   </span>
                   <span class="opcion__precio">{{ pesos(totalCon('mercadoPago')) }}</span>
                 </label>
@@ -154,7 +155,7 @@
                   <input v-model="pago" type="radio" name="pago" value="transferencia">
                   <span class="opcion__texto">
                     <strong>Transferencia bancaria <em class="off">{{ off('transferencia') }} OFF</em></strong>
-                    <span>Te mostramos el alias y el CBU al confirmar.</span>
+                    <span>Con descuento (de prueba).</span>
                   </span>
                   <span class="opcion__precio">{{ pesos(totalCon('transferencia')) }}</span>
                 </label>
@@ -171,13 +172,13 @@
 
               <label class="check campo--ancho">
                 <input v-model="acepta" type="checkbox" :aria-invalid="!!errores.acepta" aria-describedby="e-acepta" @change="validar('acepta')">
-                <span>Entiendo que el pedido se confirma cuando se acredita el pago y que las placas usadas tienen 3 meses de garantía.</span>
+                <span>Entiendo que es una tienda de práctica: el pedido queda registrado pero no se realiza ningún pago.</span>
               </label>
               <p v-if="errores.acepta" id="e-acepta" class="campo__error campo--ancho">{{ errores.acepta }}</p>
 
               <div class="paso__acciones">
                 <p v-if="errorEnvio" class="checkout__error" role="alert">{{ errorEnvio }}</p>
-                <button type="submit" class="btn btn--primario btn--grande" :disabled="enviando" @mousedown.prevent>{{ enviando ? 'Confirmando…' : 'Confirmar compra · ' + pesos(totales.total) }}</button>
+                <button type="submit" class="btn btn--primario btn--grande" :disabled="enviando" @mousedown.prevent>{{ enviando ? 'Confirmando…' : 'Confirmar pedido de prueba · ' + pesos(totales.total) }}</button>
               </div>
             </div>
           </transition>
@@ -473,6 +474,7 @@ export default {
 .paso__acciones { display: flex; justify-content: flex-end; }
 .paso__acciones .btn { width: 100%; }
 .btn--grande { min-height: 54px; font-size: 16px; }
+.demo { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--rosa); font-size: 14px; line-height: 1.45; }
 .checkout__error { margin: 0 0 10px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--error) 12%, transparent); color: var(--error); font-size: 14px; font-weight: 600; }
 
 .resumen { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
