@@ -68,10 +68,15 @@
       </select>
     </div>
 
-    <label class="buscador__check">
-      <input type="checkbox" :checked="soloStock" @change="$emit('update:soloStock', $event.target.checked)">
-      <span>Solo con stock</span>
-    </label>
+    <button
+      type="button"
+      :class="['buscador__stock', { activo: soloStock }]"
+      :aria-pressed="soloStock ? 'true' : 'false'"
+      @click="$emit('update:soloStock', !soloStock)"
+    >
+      <svg v-if="soloStock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+      Solo con stock
+    </button>
   </div>
 </template>
 
@@ -177,15 +182,29 @@ select {
   border-radius: 10px;
   background: var(--papel);
 }
-.buscador__check {
-  display: flex;
+/* Botón que se prende y se apaga: alineado abajo, a la altura de los select */
+.buscador__stock {
+  align-self: end;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
   min-height: 44px;
-  font-size: 14px;
+  padding: 0 14px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--papel);
+  color: var(--texto);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.buscador__check input { width: 18px; height: 18px; accent-color: var(--magenta); }
+.buscador__stock:hover { border-color: var(--magenta); }
+.buscador__stock.activo { background: var(--magenta-texto); border-color: var(--magenta-texto); color: var(--fondo); }
+@media (prefers-reduced-motion: reduce) { .buscador__stock { transition: none; } }
 @media (min-width: 980px) {
   .buscador {
     grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
