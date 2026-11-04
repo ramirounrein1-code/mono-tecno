@@ -18,6 +18,8 @@ const routes = [
   { path: '/cuenta/registro', name: 'registro', component: () => import('../views/AuthView.vue'), meta: { titulo: 'Crear cuenta', soloInvitado: true } },
   { path: '/comparar', name: 'comparar', component: () => import('../views/CompareView.vue'), meta: { titulo: 'Comparar' } },
   { path: '/arma-tu-pc', name: 'armado', component: () => import('../views/BuildView.vue'), meta: { titulo: 'Armá tu PC' } },
+  { path: '/privacidad', name: 'privacidad', component: () => import('../views/LegalView.vue'), props: { tipo: 'privacidad' }, meta: { titulo: 'Política de privacidad' } },
+  { path: '/terminos', name: 'terminos', component: () => import('../views/LegalView.vue'), props: { tipo: 'terminos' }, meta: { titulo: 'Condiciones de uso' } },
   { path: '/acerca', name: 'acerca', component: () => import('../views/AboutView.vue'), meta: { titulo: 'Nosotros' } },
 
   // ---- Administración (requiere iniciar sesión) ----
