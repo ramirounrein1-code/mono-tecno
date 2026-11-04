@@ -4,20 +4,14 @@
       ref="lienzo"
       :class="['gpu3d__lienzo', { cargando: !cargada }]"
       role="img"
-      aria-label="Placa de video NVIDIA GeForce RTX 3080 en 3D. Se puede girar arrastrándola con el mouse."
+      aria-label="Placa de video en 3D. Se puede girar arrastrándola con el mouse."
       @pointerdown="empezar"
     ></div>
-    <!-- Crédito que pide la licencia CC BY del modelo -->
-    <figcaption class="gpu3d__credito">
-      Modelo 3D: <a href="https://sketchfab.com/3d-models/geforce-rtx-3080-graphics-card-8b947ee1bf7a4e3d8ffa1c24893ac160" target="_blank" rel="noopener noreferrer">“GeForce RTX 3080 Graphics Card”</a>
-      de <a href="https://sketchfab.com/samuelsurovic" target="_blank" rel="noopener noreferrer">_surovic_</a>,
-      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
-    </figcaption>
   </figure>
 </template>
 
 <script>
-// Placa de video real en 3D (modelo de Sketchfab con licencia CC BY 4.0), con three.js.
+// Placa de video real en 3D (modelo de Sketchfab con licencia CC BY 4.0; crédito en CREDITOS.md), con three.js.
 // El archivo original pesaba 12 MB: se comprimió a 1 MB (geometría con meshopt y texturas en WebP).
 // Solo se usa en computadora. Se gira arrastrando con el mouse; no gira sola.
 import * as THREE from 'three'
@@ -228,7 +222,5 @@ export default {
 .gpu3d__lienzo.cargando { opacity: 0; }
 .gpu3d__lienzo.agarrando { cursor: grabbing; }
 .gpu3d__lienzo :deep(canvas) { display: block; width: 100% !important; height: 100% !important; }
-.gpu3d__credito { font-size: 11px; color: var(--texto-2); text-align: center; }
-.gpu3d__credito a { color: inherit; text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .gpu3d__lienzo { transition: none; } }
 </style>
