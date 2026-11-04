@@ -100,7 +100,7 @@ export default {
   color: #0b0b2a;
   border-bottom: 1px solid var(--borde);
 }
-.card__imagen img { width: 100%; height: 100%; object-fit: cover; }
+.card__imagen img { width: 100%; height: 100%; object-fit: contain; }
 .card__icono {
   width: 80px;
   height: 80px;

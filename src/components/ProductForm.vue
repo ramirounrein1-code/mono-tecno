@@ -83,9 +83,12 @@
               {{ subiendo ? 'Procesando…' : 'Subir foto desde la compu' }}
             </label>
             <input id="f-archivo" ref="archivo" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" @change="subirFoto">
-            <span class="campo__ayuda">JPG, PNG o WEBP de hasta 5 MB. Se achica sola.</span>
+            <span class="campo__ayuda">JPG, PNG o WEBP de hasta 5 MB. Se achica sola y se guarda con fondo blanco.</span>
             <label for="f-imagen" class="foto__o">o pegá un link</label>
-            <input id="f-imagen" v-model.trim="urlImagen" type="url" placeholder="https://…/foto.jpg" :aria-invalid="!!errores.imagen" aria-describedby="e-imagen" @blur="usarUrl">
+            <div class="foto__link">
+              <input id="f-imagen" v-model.trim="urlImagen" type="url" inputmode="url" placeholder="https://…" :aria-invalid="!!errores.imagen" aria-describedby="e-imagen" @keydown.enter.prevent="usarUrl" @paste="pegoLink">
+              <button type="button" class="btn btn--fantasma btn--chico" :disabled="!urlImagen || probandoLink" @click="usarUrl">{{ probandoLink ? 'Probando…' : 'Usar link' }}</button>
+            </div>
             <button v-if="form.imagen" type="button" class="foto__quitar" @click="quitarFoto">Quitar foto</button>
           </div>
         </div>
@@ -130,7 +133,7 @@
 <script>
 import { CATEGORIAS, CONDICIONES } from '../data/productosIniciales'
 import { skuDisponible, siguienteSku } from '../services/productosService'
-import { resolverImagen, prepararFotoSubida } from '../services/imagenes'
+import { resolverImagen, prepararFotoSubida, probarImagen } from '../services/imagenes'
 
 const VACIO = {
   nombre: '',
@@ -172,6 +175,7 @@ export default {
       condiciones: CONDICIONES,
       form: { ...VACIO },
       urlImagen: '',
+      probandoLink: false,
       errores: {},
       intentoEnviar: false,
       subiendo: false
@@ -301,10 +305,22 @@ export default {
         this.subiendo = false
       }
     },
-    usarUrl () {
-      if (!this.urlImagen) return
-      if (!/^https:\/\/\S+\.(jpg|jpeg|png|webp)(\?\S*)?$/i.test(this.urlImagen)) {
-        this.errores = { ...this.errores, imagen: 'El link debe empezar con https:// y terminar en .jpg, .png o .webp.' }
+    // Al pegar un link se prueba solo, sin tener que tocar el botón.
+    pegoLink () {
+      this.$nextTick(() => this.usarUrl())
+    },
+    // Acepta cualquier link https y comprueba que de verdad sea una imagen antes de usarlo.
+    async usarUrl () {
+      if (!this.urlImagen || this.probandoLink) return
+      if (!/^https:\/\/[^\s"'<>]+$/i.test(this.urlImagen)) {
+        this.errores = { ...this.errores, imagen: 'El link tiene que empezar con https://' }
+        return
+      }
+      this.probandoLink = true
+      const ok = await probarImagen(this.urlImagen)
+      this.probandoLink = false
+      if (!ok) {
+        this.errores = { ...this.errores, imagen: 'Ese link no abre una imagen. Copiá la dirección de la imagen (clic derecho → "Copiar dirección de imagen").' }
         return
       }
       this.form.imagen = this.urlImagen
@@ -437,4 +453,6 @@ textarea:focus { border-color: var(--navy); background: var(--papel); outline: n
   .campo--ancho { grid-column: 1 / -1; }
   .form__acciones { flex-direction: row; justify-content: flex-end; }
 }
+.foto__link { display: flex; gap: 8px; }
+.foto__link input { flex: 1; min-width: 0; }
 </style>

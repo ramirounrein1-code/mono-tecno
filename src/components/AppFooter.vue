@@ -28,7 +28,10 @@
         <a href="https://www.google.com/maps/search/?api=1&query=Ituzaing%C3%B3%2C%20Buenos%20Aires" target="_blank" rel="noopener noreferrer">{{ tienda.zona }}</a>
       </div>
     </div>
-    <div class="contenedor footer__legal">© {{ anio }} mono.tecno · Todos los derechos reservados</div>
+    <div class="contenedor footer__legal">
+      <span>© {{ anio }} mono.tecno · Todos los derechos reservados</span>
+      <span class="footer__docs"><router-link to="/privacidad">Privacidad</router-link><router-link to="/terminos">Condiciones</router-link></span>
+    </div>
   </footer>
 </template>
 
@@ -66,5 +69,8 @@ export default {
   .footer__col a { display: flex; align-items: center; min-height: 44px; }
   .footer__col span { padding: 10px 0; }
 }
-.footer__legal { margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 13px; color: rgba(255, 255, 255, 0.6); }
+.footer__legal { margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 13px; color: rgba(255, 255, 255, 0.6);; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
+.footer__docs { display: flex; gap: 16px; }
+.footer__docs a { color: rgba(255, 255, 255, 0.72); }
+.footer__docs a:hover { color: #fff; }
 </style>

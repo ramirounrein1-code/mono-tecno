@@ -76,7 +76,7 @@ export default {
 }
 .comparar-barra__fotos { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex: none; }
 .comparar-barra__fotos li { position: relative; width: 56px; height: 42px; border-radius: 8px; border: 1px solid var(--borde); background: #fff; }
-.comparar-barra__fotos img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.comparar-barra__fotos img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
 .comparar-barra__libre { border-style: dashed !important; background: transparent !important; }
 .comparar-barra__quitar { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 999px; border: 0; background: var(--texto); color: var(--fondo); font-size: 14px; line-height: 1; cursor: pointer; }
 .comparar-barra__texto { margin: 0; display: flex; flex-direction: column; font-size: 13px; line-height: 1.3; min-width: 0; flex: 1; }

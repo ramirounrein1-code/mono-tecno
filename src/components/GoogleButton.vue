@@ -18,7 +18,7 @@ import { googleConfigurado, mostrarBotonGoogle } from '../services/google'
 export default {
   name: 'GoogleButton',
   props: {
-    // 'continue_with' | 'signup_with' | 'signin_with'
+    // Siempre "Continuar con Google": el mismo texto que el botón provisorio, así no cambia al cargar
     texto: { type: String, default: 'continue_with' }
   },
   emits: ['ingreso', 'error'],
