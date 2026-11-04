@@ -143,7 +143,9 @@ export default {
       // Animación de los ventiladores que trae el modelo
       if (gltf.animations && gltf.animations.length && !this.quieto) {
         this.mezclador = new THREE.AnimationMixer(modelo)
-        gltf.animations.forEach((a) => this.mezclador.clipAction(a).play())
+        // El modelo trae varias velocidades: se usa solo la de 1500 rpm
+        const clip = gltf.animations.find((a) => /1500/.test(a.name)) || gltf.animations[0]
+        this.mezclador.clipAction(clip).play()
       }
       this.cargada = true
     },
