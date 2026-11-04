@@ -33,13 +33,16 @@
       <h1>Condiciones de uso</h1>
       <p class="texto-sec">Última actualización: 4 de noviembre de 2026</p>
 
+      <h2>Tienda de práctica</h2>
+      <p>mono.tecno es un proyecto educativo. Los pedidos quedan registrados para mostrar cómo funciona la tienda, pero <strong>no se cobra nada</strong> ni se piden datos de tarjetas o cuentas bancarias.</p>
+
       <h2>Precios y stock</h2>
       <p>Los precios están en pesos argentinos e incluyen impuestos. Pagando por transferencia o en efectivo tenés un {{ descuento }} % de descuento. El stock se reserva cuando confirmás el pedido.</p>
 
       <h2>Pedidos</h2>
       <ul>
         <li>Cada pedido puede llevar hasta {{ limites.porProducto }} unidades del mismo producto y hasta {{ limites.porPedido }} unidades en total.</li>
-        <li>Si pagás por transferencia tenés {{ limites.horasReserva }} horas para enviar el comprobante. Después el pedido se cancela solo y los productos vuelven a estar a la venta.</li>
+        <li>Un pedido que no se marca como pagado se cancela solo a las {{ limites.horasReserva }} horas y los productos vuelven a estar a la venta.</li>
         <li>Podemos cancelar pedidos con datos falsos o que busquen acaparar stock.</li>
       </ul>
 
