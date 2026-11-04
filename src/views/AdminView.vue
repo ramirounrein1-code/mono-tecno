@@ -43,6 +43,11 @@
         <div class="panel__barra">
           <label for="admin-buscar" class="sr-only">Buscar producto</label>
           <input id="admin-buscar" v-model="busqueda" type="search" placeholder="Buscar por nombre, marca o SKU…">
+          <label for="admin-categoria" class="sr-only">Categoría</label>
+          <select id="admin-categoria" v-model="categoriaFiltro">
+            <option value="">Todas las categorías</option>
+            <option v-for="c in categoriasConProductos" :key="c.nombre" :value="c.nombre">{{ c.nombre }} ({{ c.cantidad }})</option>
+          </select>
           <label for="admin-orden" class="sr-only">Ordenar</label>
           <select id="admin-orden" v-model="orden">
             <option value="recientes">Más recientes</option>
@@ -60,7 +65,7 @@
                 <th scope="col">Categoría</th>
                 <th scope="col">Condición</th>
                 <th scope="col" class="num">Precio</th>
-                <th scope="col" class="num">Stock</th>
+                <th scope="col">Stock</th>
                 <th scope="col"><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
@@ -78,7 +83,7 @@
                 <td>{{ p.categoria }}</td>
                 <td>{{ p.condicion }}</td>
                 <td class="num">{{ pesos(p.precio) }}</td>
-                <td class="num">
+                <td>
                   <!-- Interruptor Con stock / Sin stock: al apagarlo guarda la cantidad y al prenderlo la recupera -->
                   <button type="button" role="switch" :aria-checked="p.stock > 0 ? 'true' : 'false'" :class="['interruptor', { prendido: p.stock > 0 }]" :aria-label="'Stock de ' + p.nombre" @click="cambiarDisponible(p)">
                     <span class="interruptor__pista" aria-hidden="true"><span class="interruptor__bola"></span></span>
@@ -191,6 +196,7 @@ export default {
       productos: [],
       pedidos: [],
       busqueda: '',
+      categoriaFiltro: '',
       orden: 'recientes',
       pestana: 'productos',
       horasReserva: LIMITES_PEDIDO.horasReserva,
@@ -202,9 +208,15 @@ export default {
     }
   },
   computed: {
+    // Categorías que tienen productos, con su cantidad (para el filtro del panel).
+    categoriasConProductos () {
+      const cuenta = {}
+      this.productos.forEach((p) => { cuenta[p.categoria] = (cuenta[p.categoria] || 0) + 1 })
+      return Object.keys(cuenta).sort((a, b) => a.localeCompare(b, 'es')).map((nombre) => ({ nombre, cantidad: cuenta[nombre] }))
+    },
     filtrados () {
       const q = normalizar(this.busqueda.trim())
-      const lista = this.productos.filter((p) => !q || normalizar(`${p.nombre} ${p.marca} ${p.sku}`).includes(q))
+      const lista = this.productos.filter((p) => (!this.categoriaFiltro || p.categoria === this.categoriaFiltro) && (!q || normalizar(`${p.nombre} ${p.marca} ${p.sku}`).includes(q)))
       const comparadores = {
         recientes: (a, b) => b.fechaAlta.localeCompare(a.fechaAlta),
         nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
@@ -433,6 +445,7 @@ export default {
 .interruptor__bola { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.2s ease; }
 .interruptor.prendido .interruptor__pista { background: var(--exito); }
 .interruptor.prendido .interruptor__bola { transform: translateX(16px); }
+.interruptor__texto { min-width: 104px; text-align: left; }
 .interruptor:not(.prendido) .interruptor__texto { color: var(--error); font-weight: 600; }
 .interruptor:focus-visible { outline: 2px solid var(--magenta); outline-offset: 3px; border-radius: 8px; }
 @media (prefers-reduced-motion: reduce) { .interruptor__pista, .interruptor__bola { transition: none; } }
