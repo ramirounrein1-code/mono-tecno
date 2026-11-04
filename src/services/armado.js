@@ -116,7 +116,9 @@ export function compatibilidad (lugar, candidato, elegidos) {
 export function revisarArmado (e) {
   const r = []
   const { cpu, gpu, ram, disco, fuente, cooler } = e
-  if (!cpu) r.push({ estado: 'pendiente', texto: 'Elegí un procesador para empezar.' })
+  const alguno = Object.values(e).some(Boolean)
+  if (!alguno) r.push({ estado: 'pendiente', texto: 'Elegí un producto para empezar.' })
+  else if (!cpu) r.push({ estado: 'pendiente', texto: 'Sumá un procesador para revisar la compatibilidad de todo el equipo.' })
   if (cpu && ram) {
     const ok = infoCpu(cpu).ddr.includes(infoRam(ram).ddr)
     r.push(ok

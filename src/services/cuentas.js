@@ -2,7 +2,7 @@
 // Las contraseñas nunca se guardan en texto: se guarda un hash PBKDF2 con una "sal" aleatoria por usuario.
 // (Sin servidor, las cuentas viven en el LocalStorage de este navegador. Con Supabase pasarían a la nube.)
 import { reactive } from 'vue'
-import { obtenerPedidos } from './productosService'
+import { obtenerPedidos, pedidosLocales } from './productosService'
 import { CUENTA_DUENIO } from '../config/tienda'
 import { pbkdf2, sha256, salAleatoria, igualesSeguro, leerJSON, guardarJSON, registrarFallo, limpiarFallos, segundosBloqueado, textoEspera } from './seguridad'
 
@@ -169,7 +169,15 @@ export function actualizarPerfil (datos) {
 
 export function pedidosDelUsuario () {
   if (!sesion.usuario) return []
-  return obtenerPedidos().filter((p) => p.usuario === sesion.usuario.email || (p.cliente && p.cliente.email === sesion.usuario.email))
+  const email = sesion.usuario.email
+  // Pedidos hechos en este navegador + los que conozca el panel (sin repetir).
+  const todos = [...pedidosLocales(), ...obtenerPedidos()]
+  const vistos = new Set()
+  return todos.filter((p) => {
+    if (vistos.has(p.numero)) return false
+    vistos.add(p.numero)
+    return p.usuario === email || (p.cliente && p.cliente.email === email)
+  })
 }
 
 // Los pedidos hechos sin cuenta solo se pueden volver a ver desde la misma pestaña del navegador.

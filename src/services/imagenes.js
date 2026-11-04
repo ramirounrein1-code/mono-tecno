@@ -32,8 +32,20 @@ export function resolverImagen (imagen) {
   return imagen
 }
 
-// Achica una foto subida desde la computadora y la devuelve como data URL (JPEG),
-// para que entre cómoda en LocalStorage.
+// Comprueba que un link abra de verdad una imagen (espera hasta 8 segundos).
+export function probarImagen (url) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const t = setTimeout(() => { img.src = ''; resolve(false) }, 8000)
+    img.onload = () => { clearTimeout(t); resolve(img.naturalWidth > 0) }
+    img.onerror = () => { clearTimeout(t); resolve(false) }
+    img.referrerPolicy = 'no-referrer'
+    img.src = url
+  })
+}
+
+// Achica una foto subida desde la computadora, le pone fondo blanco (las PNG/WEBP transparentes
+// no quedan negras) y la devuelve como data URL en WEBP, que pesa menos y entra cómoda en LocalStorage.
 export function prepararFotoSubida (archivo, maxAncho = 640, maxAlto = 480) {
   return new Promise((resolve, reject) => {
     const lector = new FileReader()
@@ -50,7 +62,9 @@ export function prepararFotoSubida (archivo, maxAncho = 640, maxAlto = 480) {
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', 0.82))
+        const webp = canvas.toDataURL('image/webp', 0.85)
+        // Algunos navegadores viejos no saben guardar WEBP: ahí queda en JPEG.
+        resolve(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', 0.85))
       }
       img.src = lector.result
     }

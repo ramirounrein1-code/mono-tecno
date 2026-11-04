@@ -34,6 +34,12 @@ export async function iniciarSesion (contrasena) {
   return { ok: true, espera: 0 }
 }
 
+// Clave del panel de esta sesión: la base de datos la vuelve a comprobar en cada cambio.
+export function claveAdmin () {
+  const s = leerSesion()
+  return s ? s.k : ''
+}
+
 export function segundosBloqueadoAdmin () {
   return segundosBloqueado('admin')
 }
