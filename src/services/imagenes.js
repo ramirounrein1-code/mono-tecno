@@ -18,7 +18,8 @@ const fotos = {
   'ddr5-vengeance': require('../assets/productos/ddr5-vengeance.webp'),
   'ssd-980-pro': require('../assets/productos/ssd-980-pro.webp'),
   'fuente-modular': require('../assets/productos/fuente-modular.webp'),
-  'cooler-hyper-212': require('../assets/productos/cooler-hyper-212.webp')
+  'cooler-hyper-212': require('../assets/productos/cooler-hyper-212.webp'),
+  'motherboard-b550': require('../assets/productos/motherboard-b550.webp')
 }
 
 // Devuelve una URL usable en <img src>: foto del proyecto, URL externa o imagen subida (data URL).

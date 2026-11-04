@@ -7,6 +7,7 @@ const CLAVE = 'monotecno_armado'
 // Cada lugar del armado, la categoría del catálogo que usa y si es obligatorio.
 export const LUGARES = [
   { id: 'cpu', titulo: 'Procesador', categoria: 'Procesadores', obligatorio: true },
+  { id: 'mother', titulo: 'Motherboard', categoria: 'Motherboards', obligatorio: true },
   { id: 'gpu', titulo: 'Placa de video', categoria: 'Placas de video', obligatorio: false },
   { id: 'ram', titulo: 'Memoria RAM', categoria: 'Memorias RAM', obligatorio: true },
   { id: 'disco', titulo: 'Almacenamiento', categoria: 'Almacenamiento', obligatorio: true },
@@ -52,6 +53,10 @@ export function infoCpu (p) {
     graficos: /^sí/i.test(dato(p, /^gráficos integrados/i))
   }
 }
+export function infoMother (p) {
+  const memoria = dato(p, /^memoria$/i)
+  return { socket: dato(p, /^socket$/i), ddr: ['DDR4', 'DDR5'].filter((t) => memoria.includes(t)) }
+}
 export function infoGpu (p) {
   return { consumo: watts(dato(p, /^consumo/i)), recomendada: watts(dato(p, /^fuente recomendada/i)) }
 }
@@ -84,13 +89,23 @@ function coolerSoporta (cooler, socket) {
 
 // Compatibilidad de un candidato con lo que ya está elegido: { estado: 'ok'|'aviso'|'error', motivo }.
 export function compatibilidad (lugar, candidato, elegidos) {
-  const { cpu, gpu, ram, fuente, cooler } = elegidos
+  const { cpu, mother, gpu, ram, fuente, cooler } = elegidos
   if (lugar === 'ram' && cpu) {
     const tipo = infoRam(candidato).ddr
     if (!infoCpu(cpu).ddr.includes(tipo)) return { estado: 'error', motivo: `${cpu.nombre} no usa ${tipo}` }
   }
+  if (lugar === 'ram' && mother) {
+    const tipo = infoRam(candidato).ddr
+    if (!infoMother(mother).ddr.includes(tipo)) return { estado: 'error', motivo: `La motherboard no usa ${tipo}` }
+  }
+  if (lugar === 'mother') {
+    const m = infoMother(candidato)
+    if (cpu && infoCpu(cpu).socket !== m.socket) return { estado: 'error', motivo: `Es ${m.socket} y el procesador es ${infoCpu(cpu).socket}` }
+    if (ram && !m.ddr.includes(infoRam(ram).ddr)) return { estado: 'error', motivo: `No usa ${infoRam(ram).ddr}` }
+  }
   if (lugar === 'cpu') {
     const i = infoCpu(candidato)
+    if (mother && infoMother(mother).socket !== i.socket) return { estado: 'error', motivo: `No entra en la motherboard (${infoMother(mother).socket})` }
     if (ram && !i.ddr.includes(infoRam(ram).ddr)) return { estado: 'error', motivo: `No usa ${infoRam(ram).ddr}` }
     if (cooler && coolerSoporta(cooler, i.socket) === 'no') return { estado: 'error', motivo: 'El cooler elegido no entra en ' + i.socket }
     if (!i.graficos && !gpu) return { estado: 'aviso', motivo: 'Necesita placa de video' }
@@ -115,7 +130,7 @@ export function compatibilidad (lugar, candidato, elegidos) {
 // Lista de chequeos del armado completo, para el resumen.
 export function revisarArmado (e) {
   const r = []
-  const { cpu, gpu, ram, disco, fuente, cooler } = e
+  const { cpu, mother, gpu, ram, disco, fuente, cooler } = e
   const alguno = Object.values(e).some(Boolean)
   if (!alguno) r.push({ estado: 'pendiente', texto: 'Elegí un producto para empezar.' })
   else if (!cpu) r.push({ estado: 'pendiente', texto: 'Sumá un procesador para revisar la compatibilidad de todo el equipo.' })
@@ -125,6 +140,13 @@ export function revisarArmado (e) {
       ? { estado: 'ok', texto: `Memoria ${infoRam(ram).ddr} compatible con el procesador.` }
       : { estado: 'error', texto: `El procesador usa ${infoCpu(cpu).ddr.join(' o ')} y la memoria es ${infoRam(ram).ddr}.` })
   }
+  if (cpu && mother) {
+    const s = infoCpu(cpu).socket
+    r.push(infoMother(mother).socket === s
+      ? { estado: 'ok', texto: `La motherboard es ${s}, igual que el procesador.` }
+      : { estado: 'error', texto: `El procesador es ${s} y la motherboard es ${infoMother(mother).socket}: no entra.` })
+  }
+  if (mother && ram && !infoMother(mother).ddr.includes(infoRam(ram).ddr)) r.push({ estado: 'error', texto: `La motherboard usa ${infoMother(mother).ddr.join(' o ')} y la memoria es ${infoRam(ram).ddr}.` })
   if (cpu && !infoCpu(cpu).graficos && !gpu) r.push({ estado: 'error', texto: 'Este procesador no tiene gráficos integrados: sin placa de video no hay imagen.' })
   if (fuente) {
     const necesita = Math.max(gpu ? infoGpu(gpu).recomendada : 0, consumoEstimado(cpu, gpu).fuente)
@@ -141,6 +163,6 @@ export function revisarArmado (e) {
     else r.push({ estado: 'error', texto: `El cooler no es compatible con ${s}.` })
   }
   if (cpu && !disco) r.push({ estado: 'aviso', texto: 'Falta un disco para instalar el sistema.' })
-  if (cpu) r.push({ estado: 'info', texto: `Motherboard: no está en el catálogo. Necesitás una ${infoCpu(cpu).socket} compatible con ${ram ? infoRam(ram).ddr : infoCpu(cpu).ddr.join(' o ')}; consultanos y te ayudamos a conseguirla.` })
+  if (cpu && !mother) r.push({ estado: 'aviso', texto: `Falta la motherboard: tiene que ser ${infoCpu(cpu).socket} y usar ${ram ? infoRam(ram).ddr : infoCpu(cpu).ddr.join(' o ')}.` })
   return r
 }
