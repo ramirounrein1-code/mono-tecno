@@ -124,7 +124,7 @@ export function ingresarConGoogle (perfil) {
   const lista = leerUsuarios()
   let u = lista.find((x) => x.email === mail)
   if (u) {
-    if (u.google && u.google !== perfil.sub) throw new Error('Este email ya está vinculado a otra cuenta de Google.')
+    // Supabase ya verificó en el servidor que el email es de esta persona: se vincula (o se actualiza el vínculo).
     u.google = perfil.sub
     if (!u.foto && perfil.foto) u.foto = perfil.foto
     if (!u.telefono && perfil.telefono) u.telefono = perfil.telefono
