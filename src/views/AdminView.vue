@@ -133,6 +133,12 @@
             <ul class="pedido__items">
               <li v-for="it in ped.items" :key="it.id">{{ it.cantidad }} × {{ it.nombre }}</li>
             </ul>
+            <div v-if="ped.comprobanteFecha" class="pedido__comprobante">
+              <span class="chip chip--comprobante">Comprobante recibido · {{ fecha(ped.comprobanteFecha) }}</span>
+              <button type="button" class="btn btn--fantasma btn--chico" :disabled="abriendoComprobante === ped.numero" @click="abrirComprobante(ped)">
+                {{ abriendoComprobante === ped.numero ? 'Abriendo…' : 'Ver comprobante' }}
+              </button>
+            </div>
             <div class="pedido__estado">
               <label :for="'estado-' + ped.numero">Estado</label>
               <select :id="'estado-' + ped.numero" :value="ped.estado" :class="'estado--' + claseEstado(ped.estado)" @change="cambiarEstado(ped, $event.target.value)">
@@ -167,18 +173,36 @@
     <ConfirmModal
       :visible="confirmarRestaurar"
       titulo="¿Restaurar el catálogo?"
-      mensaje="Se borran los cambios y productos que agregaste, y vuelven los 16 productos iniciales."
+      mensaje="Se borran los cambios y productos que agregaste, y vuelven los 17 productos iniciales."
       texto-confirmar="Restaurar"
       @confirmar="restaurar"
       @cancelar="confirmarRestaurar = false"
     />
+
+    <!-- Visor del comprobante de pago -->
+    <transition name="fade">
+      <div v-if="comprobante" class="visor" role="dialog" aria-modal="true" :aria-label="'Comprobante del pedido ' + comprobante.numero" @click.self="cerrarComprobante" @keydown.esc="cerrarComprobante">
+        <div class="visor__caja tarjeta">
+          <div class="visor__cabecera">
+            <h2>Comprobante · pedido #{{ comprobante.numero }}</h2>
+            <button ref="cerrarVisor" type="button" class="visor__cerrar" aria-label="Cerrar" @click="cerrarComprobante">×</button>
+          </div>
+          <img v-if="comprobante.tipo.startsWith('image/')" :src="comprobante.url" :alt="'Comprobante del pedido ' + comprobante.numero" class="visor__imagen">
+          <p v-else class="texto-sec">Es un PDF. Descargalo para verlo.</p>
+          <div class="visor__acciones">
+            <a :href="comprobante.url" :download="comprobante.nombre" class="btn btn--primario btn--chico">Descargar</a>
+            <button v-if="comprobante.estado === 'Pendiente de pago'" type="button" class="btn btn--fantasma btn--chico" @click="marcarPagado">Marcar como pagado</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
 import ConfirmModal from '../components/ConfirmModal.vue'
 import { LIMITES_PEDIDO } from '../config/limites'
-import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, sincronizarPedidosAdmin, sincronizarCatalogo, catalogo, actualizarEstadoPedido, eliminarPedido, alternarDisponible, alternarDestacado, ESTADOS_PEDIDO, ESTADOS_FINALIZADOS } from '../services/productosService'
+import { obtenerProductos, eliminarProducto, restaurarProductos, obtenerPedidos, sincronizarPedidosAdmin, sincronizarCatalogo, catalogo, actualizarEstadoPedido, eliminarPedido, alternarDisponible, alternarDestacado, ESTADOS_PEDIDO, ESTADOS_FINALIZADOS, verComprobante } from '../services/productosService'
 import { cerrarSesion } from '../services/auth'
 import { formatearPesos } from '../services/dolarService'
 import { resolverImagen } from '../services/imagenes'
@@ -203,6 +227,8 @@ export default {
       aEliminar: null,
       confirmarRestaurar: false,
       pedidoAEliminar: null,
+      comprobante: null,
+      abriendoComprobante: null,
       filtroPedidos: 'activos',
       estados: ESTADOS_PEDIDO
     }
@@ -251,11 +277,13 @@ export default {
     // Pendientes armados solos a partir de los pedidos y el stock.
     tareas () {
       const pagados = this.pedidos.filter((p) => p.estado === 'Pagado').length
-      const esperando = this.pedidos.filter((p) => p.estado === 'Pendiente de pago').length
+      const aRevisar = this.pedidos.filter((p) => p.estado === 'Pendiente de pago' && p.comprobanteFecha).length
+      const esperando = this.pedidos.filter((p) => p.estado === 'Pendiente de pago' && !p.comprobanteFecha).length
       const enviados = this.pedidos.filter((p) => p.estado === 'Enviado').length
       const ultimas = this.productos.filter((p) => p.stock === 1).length
       return [
         { id: 'pagados', cantidad: pagados, texto: pagados === 1 ? 'pedido pagado para preparar y enviar' : 'pedidos pagados para preparar y enviar', tono: 'urgente', pestana: 'pedidos' },
+        { id: 'revisar', cantidad: aRevisar, texto: aRevisar === 1 ? 'comprobante para revisar: confirmá el pago' : 'comprobantes para revisar: confirmá los pagos', tono: 'urgente', pestana: 'pedidos' },
         { id: 'esperando', cantidad: esperando, texto: esperando === 1 ? 'pedido esperando el pago' : 'pedidos esperando el pago', tono: 'info', pestana: 'pedidos' },
         { id: 'enviados', cantidad: enviados, texto: enviados === 1 ? 'envío en camino: marcalo entregado cuando llegue' : 'envíos en camino: marcalos entregados cuando lleguen', tono: 'info', pestana: 'pedidos' },
         { id: 'ultimas', cantidad: ultimas, texto: ultimas === 1 ? 'producto con la última unidad' : 'productos con la última unidad', tono: 'aviso', pestana: 'productos', orden: 'stock' }
@@ -297,6 +325,23 @@ export default {
       }
     },
     pesos (v) { return formatearPesos(v) },
+    async abrirComprobante (ped) {
+      this.abriendoComprobante = ped.numero
+      const c = await this.probar(() => verComprobante(ped.numero))
+      this.abriendoComprobante = null
+      if (!c) return
+      this.comprobante = { ...c, numero: ped.numero, estado: ped.estado }
+      this.$nextTick(() => { if (this.$refs.cerrarVisor) this.$refs.cerrarVisor.focus() })
+    },
+    cerrarComprobante () {
+      if (this.comprobante) URL.revokeObjectURL(this.comprobante.url)
+      this.comprobante = null
+    },
+    async marcarPagado () {
+      const ped = this.pedidos.find((p) => p.numero === this.comprobante.numero)
+      this.cerrarComprobante()
+      if (ped) await this.cambiarEstado(ped, 'Pagado')
+    },
     // Desde "Para hacer hoy" lleva a la lista que corresponde.
     irA (t) {
       this.pestana = t.pestana
@@ -451,6 +496,17 @@ export default {
 @media (prefers-reduced-motion: reduce) { .interruptor__pista, .interruptor__bola { transition: none; } }
 .tabla__estrella { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--borde); border-radius: 10px; background: var(--papel); color: #b9b3b5; cursor: pointer; }
 .tabla__estrella.activa { color: #e0a100; border-color: #f1d27a; background: #fff8e1; }
+.pedido__comprobante { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.chip--comprobante { background: color-mix(in srgb, var(--exito) 14%, transparent); color: var(--exito); font-weight: 600; }
+.visor { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(11, 11, 42, 0.55); }
+.visor__caja { width: min(720px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.visor__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.visor__cabecera h2 { font-size: 18px; font-weight: 600; margin: 0; }
+.visor__cerrar { width: 40px; height: 40px; border: 0; border-radius: 999px; background: var(--fondo); color: var(--texto); font-size: 24px; line-height: 1; cursor: pointer; }
+.visor__imagen { width: 100%; height: auto; max-height: 65vh; object-fit: contain; border-radius: 10px; background: #fff; }
+.visor__acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 /* Pedidos: al pasar a Finalizados (o borrarse) la tarjeta se desvanece y las demás suben suave */
 .pedido-anim-move { transition: transform 0.35s ease; }
 .pedido-anim-enter-active, .pedido-anim-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }

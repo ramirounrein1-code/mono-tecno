@@ -34,6 +34,22 @@
           <!-- Tienda de práctica: no hay pagos reales -->
           <p>Este pedido es de prueba: <strong>no tenés que pagar nada</strong>. mono.tecno es un proyecto de práctica y no cobra ni pide datos de pago.</p>
           <p class="texto-sec pago__nota">El pedido quedó registrado con el medio que elegiste ({{ nombrePago }}) y se ve en el panel de administración, donde se le cambia el estado.</p>
+
+          <!-- Comprobante de pago: foto o PDF -->
+          <div v-if="puedeAdjuntar" class="comprobante" aria-live="polite">
+            <h3 class="comprobante__titulo">Comprobante de pago</h3>
+            <p v-if="pedido.comprobanteFecha" class="comprobante__ok">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+              Lo recibimos el {{ fechaComprobante }}. Lo revisamos y te avisamos.
+            </p>
+            <p v-else class="texto-sec comprobante__texto">¿Ya pagaste? Adjuntá una foto o captura del comprobante (JPG, PNG o PDF, hasta 5 MB).</p>
+            <input id="comprobante-archivo" ref="archivo" type="file" class="comprobante__input" :accept="tiposComprobante" :disabled="subiendo" @change="subirComprobante">
+            <label for="comprobante-archivo" :class="['btn', pedido.comprobanteFecha ? 'btn--fantasma' : 'btn--primario', 'comprobante__boton', { deshabilitado: subiendo }]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.6l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" /></svg>
+              {{ subiendo ? 'Subiendo…' : (pedido.comprobanteFecha ? 'Cambiar comprobante' : 'Adjuntar comprobante') }}
+            </label>
+            <p v-if="errorComprobante" class="campo__error" role="alert">{{ errorComprobante }}</p>
+          </div>
         </section>
 
         <!-- Resumen -->
@@ -68,9 +84,10 @@
 </template>
 
 <script>
-import { obtenerPedido, actualizarPedidosLocales } from '../services/productosService'
+import { obtenerPedido, actualizarPedidosLocales, adjuntarComprobante, TIPOS_COMPROBANTE } from '../services/productosService'
 import { formatearPesos } from '../services/dolarService'
 import { TIENDA } from '../config/tienda'
+import { nubeActiva } from '../services/nube'
 import { sesion, puedeVerPedido } from '../services/cuentas'
 import { obtenerProducto } from '../services/productosService'
 import { agregar } from '../services/carrito'
@@ -87,6 +104,9 @@ export default {
       pedido: null,
       cargado: false,
       copiado: '',
+      subiendo: false,
+      errorComprobante: '',
+      tiposComprobante: TIPOS_COMPROBANTE.join(','),
       zona: TIENDA.zona,
       horarios: TIENDA.horarios,
       linkInstagram: `https://ig.me/m/${TIENDA.instagram}`
@@ -102,6 +122,14 @@ export default {
     },
     fechaLarga () {
       return new Date(this.pedido.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    },
+    // Se puede adjuntar mientras el pedido siga abierto y se haya hecho desde este navegador (tiene su código).
+    puedeAdjuntar () {
+      return ['Pendiente de pago', 'Pagado'].includes(this.pedido.estado) && (!!this.pedido.token || !nubeActiva())
+    },
+    fechaComprobante () {
+      const d = new Date(this.pedido.comprobanteFecha)
+      return `${d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} a las ${d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
     },
     tituloPago () {
       return 'Pedido de prueba'
@@ -146,6 +174,22 @@ export default {
       this.$emit('notificar', { mensaje: sinStock.length ? `Agregamos lo que hay en stock. Sin stock: ${sinStock.join(', ')}.` : 'Agregamos los productos al carrito.' })
       this.$router.push({ name: 'carrito' })
     },
+    async subirComprobante (e) {
+      const archivo = e.target.files && e.target.files[0]
+      e.target.value = '' // así se puede volver a elegir el mismo archivo
+      if (!archivo) return
+      this.errorComprobante = ''
+      this.subiendo = true
+      try {
+        const fecha = await adjuntarComprobante(this.pedido, archivo)
+        this.pedido = { ...this.pedido, comprobanteFecha: fecha }
+        this.$emit('notificar', { mensaje: 'Recibimos tu comprobante.' })
+      } catch (err) {
+        this.errorComprobante = err.message
+      } finally {
+        this.subiendo = false
+      }
+    },
     async copiar (texto, clave) {
       try {
         await navigator.clipboard.writeText(texto)
@@ -174,6 +218,16 @@ export default {
 .pago__btn { align-self: flex-start; }
 .pago__aviso { padding: 12px 14px; border-radius: 12px; background: var(--rosa); }
 .pago__nota { font-size: 14px; }
+.comprobante { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--borde); }
+.comprobante__titulo { margin: 0; font-size: 17px; font-weight: 600; }
+.comprobante__texto { margin: 0; font-size: 14px; }
+.comprobante__ok { margin: 0; display: flex; gap: 8px; align-items: flex-start; color: var(--exito); font-weight: 600; font-size: 15px; }
+.comprobante__ok svg { flex: none; margin-top: 2px; }
+/* El input de archivo queda invisible pero accesible: se usa con el botón (label) */
+.comprobante__input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.comprobante__input:focus-visible + .comprobante__boton { outline: 3px solid var(--magenta); outline-offset: 2px; }
+.comprobante__boton { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.comprobante__boton.deshabilitado { opacity: 0.6; cursor: wait; }
 .cuenta { margin: 0; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; }
 .cuenta div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--borde); }
 .cuenta div:last-child { border-bottom: 0; }
