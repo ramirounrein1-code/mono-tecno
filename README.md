@@ -32,6 +32,7 @@ Temática: **Catálogo de Productos**. Diseño basado en el estilo "Superhuman" 
 | Repositorio (GitHub) | https://github.com/ramirounrein1-code/mono-tecno |
 | Ingreso con Google · ID de cliente | `756501765128-3fl0d90sabicul4s7g1pq4cm2lfesig1.apps.googleusercontent.com` |
 | Supabase · URL del proyecto | `https://kjctxnklfsycmcaonbes.supabase.co` |
+| Supabase · callback de Google | `https://kjctxnklfsycmcaonbes.supabase.co/auth/v1/callback` |
 | Supabase · clave pública (publishable) | `sb_publishable_N-tnoaDfkrzZxmh7ui_8dQ_mkFN263P` |
 | Cuenta de cliente y panel | `ramirounrein1@gmail.com` · contraseña `isec` (ver "Accesos para probar") |
 
@@ -67,8 +68,10 @@ npm run build      # versión de producción en /dist
 ### Base de datos (Supabase)
 
 1. Crear un proyecto gratis en [supabase.com](https://supabase.com).
-2. En **SQL Editor**, pegar y ejecutar `supabase/esquema.sql` (tablas, permisos y funciones) y después `supabase/datos_iniciales.sql` (los 17 productos).
-3. Copiar la URL del proyecto y la clave **publishable** en `src/config/tienda.js` (o como variables `VUE_APP_SUPABASE_URL` y `VUE_APP_SUPABASE_ANON_KEY` en Vercel).
+2. En **SQL Editor**, pegar y ejecutar `supabase/esquema.sql` (tablas, permisos y funciones), después `supabase/datos_iniciales.sql` (los 17 productos) y por último `supabase/usuarios.sql` (perfiles de usuario y pedidos unidos a cada usuario).
+3. En **Authentication → Sign In / Providers → Google**: activarlo y cargar el *Client ID* y el *Client Secret* de Google Cloud. En Google Cloud, agregar el callback de Supabase en "URIs de redireccionamiento autorizados".
+4. En **Authentication → URL Configuration**: *Site URL* `https://mono-tecno-tienda.vercel.app` y en *Redirect URLs* `https://mono-tecno-tienda.vercel.app/**`.
+5. Copiar la URL del proyecto y la clave **publishable** en `src/config/tienda.js` (o como variables `VUE_APP_SUPABASE_URL` y `VUE_APP_SUPABASE_ANON_KEY` en Vercel).
 
 Sin Supabase configurado, la tienda funciona igual guardando todo en LocalStorage (modo demo).
 
@@ -126,7 +129,13 @@ Los valores están en `src/config/limites.js` y en `supabase/esquema.sql`.
 
 ## Ingreso con Google
 
-El botón "Continuar con Google" usa **Google Identity Services** (la librería oficial). Google muestra su propia ventana para elegir la cuenta: la contraseña de Google nunca pasa por la página. Si el email ya tenía cuenta, se vincula; si no, se crea con el nombre y la foto de Google.
+El botón "Continuar con Google" usa **Supabase Auth** con el proveedor Google (`src/services/supabaseAuth.js`):
+
+1. La tienda manda al usuario a Supabase, que abre la pantalla de Google. La contraseña de Google nunca pasa por la página.
+2. Google vuelve al callback de Supabase y Supabase vuelve a la tienda (`/cuenta/ingresar`) con la sesión.
+3. La tienda le pide a Supabase los datos del usuario (así se verifica en el servidor que la sesión es real) y su perfil.
+
+Cada usuario queda guardado en Supabase (**Authentication → Users**) y su perfil en la tabla **`perfiles`** (se crea solo con un trigger). Los pedidos que hace con la sesión iniciada quedan unidos a él (`pedidos.user_id`), y en "Mi cuenta" los ve desde cualquier dispositivo con la función `mis_pedidos()`. Con Row Level Security, cada usuario solo puede leer y editar su propio perfil y ver sus propios pedidos.
 
 La página usa un **ID de cliente OAuth** de Google Cloud (`GOOGLE_CLIENT_ID` en `src/config/tienda.js`, proyecto "mono-tecno"), autorizado para `https://mono-tecno-tienda.vercel.app` y `http://localhost:8080`. Google solo acepta ingresos desde esas direcciones. Para publicar la app, la tienda tiene sus páginas de [privacidad](https://mono-tecno-tienda.vercel.app/privacidad) y [condiciones](https://mono-tecno-tienda.vercel.app/terminos).
 
