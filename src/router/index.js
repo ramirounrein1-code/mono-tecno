@@ -51,7 +51,9 @@ router.beforeEach(async (to) => {
   if (to.name === 'login' && (await estaLogueado())) return { name: 'admin' }
   // Cuentas de clientes
   if (to.meta.soloCliente && !estaLogueadoCliente()) return { name: 'ingresar', query: { redirect: to.fullPath } }
-  if (to.meta.soloInvitado && estaLogueadoCliente()) return { name: 'cuenta' }
+  // Al volver de Google (vía Supabase) se deja pasar siempre: la página de ingreso lee la sesión que viene en la dirección.
+  const volviendoDeGoogle = /access_token=|error_description=/.test(window.location.hash)
+  if (to.meta.soloInvitado && estaLogueadoCliente() && !volviendoDeGoogle) return { name: 'cuenta' }
   return true
 })
 
