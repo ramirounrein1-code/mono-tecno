@@ -68,7 +68,7 @@ npm run build      # versión de producción en /dist
 ### Base de datos (Supabase)
 
 1. Crear un proyecto gratis en [supabase.com](https://supabase.com).
-2. En **SQL Editor**, pegar y ejecutar `supabase/esquema.sql` (tablas, permisos y funciones), después `supabase/datos_iniciales.sql` (los 17 productos) y por último `supabase/usuarios.sql` (perfiles de usuario y pedidos unidos a cada usuario).
+2. En **SQL Editor**, pegar y ejecutar `supabase/esquema.sql` (tablas, permisos y funciones), después `supabase/datos_iniciales.sql` (los 17 productos) `supabase/usuarios.sql` (perfiles de usuario y pedidos unidos a cada usuario) y `supabase/comprobantes.sql` (comprobantes de pago).
 3. En **Authentication → Sign In / Providers → Google**: activarlo y cargar el *Client ID* y el *Client Secret* de Google Cloud. En Google Cloud, agregar el callback de Supabase en "URIs de redireccionamiento autorizados".
 4. En **Authentication → URL Configuration**: *Site URL* `https://mono-tecno-tienda.vercel.app` y en *Redirect URLs* `https://mono-tecno-tienda.vercel.app/**`.
 5. Copiar la URL del proyecto y la clave **publishable** en `src/config/tienda.js` (o como variables `VUE_APP_SUPABASE_URL` y `VUE_APP_SUPABASE_ANON_KEY` en Vercel).
@@ -126,6 +126,10 @@ Los valores están en `src/config/limites.js` y en `supabase/esquema.sql`.
 - Interruptor **Con stock / Sin stock** en la tabla: al apagarlo guarda la cantidad y al prenderlo la recupera.
 - Si un destacado se queda sin stock, en el inicio lo reemplaza otro automáticamente.
 - Las fotos subidas se achican, se les pone fondo blanco y se guardan en WebP. También se puede pegar el link de una foto: se comprueba que abra antes de guardarla.
+
+## Comprobante de pago
+
+En la página de su pedido, el cliente puede **adjuntar el comprobante** (foto o PDF, hasta 5 MB). Las fotos se achican en el navegador antes de subir (máx. 1 MB) y se guardan en Supabase, en una tabla privada (`privado.comprobantes`) que nadie puede leer directo. Para subirlo hace falta el número de pedido **y** su código secreto, que solo tiene quien hizo la compra. En el panel, el pedido muestra "Comprobante recibido" y el botón **Ver comprobante** (con "Descargar" y "Marcar como pagado"); además aparece en "Para hacer hoy".
 
 ## Ingreso con Google
 
