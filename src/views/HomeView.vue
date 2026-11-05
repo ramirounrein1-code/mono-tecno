@@ -150,7 +150,7 @@ export default {
   /* Todas las categorías en una sola fila: en celular se desliza de costado */
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(140px, 1fr);
+  grid-auto-columns: minmax(160px, 1fr); /* entra entera la palabra más larga ("Almacenamiento") */
   gap: 10px;
   margin-top: 20px;
   overflow-x: auto;
@@ -180,7 +180,8 @@ export default {
   align-items: center;
   justify-content: center;
 }
-.categoria__nombre { font-weight: 600; }
+.categoria { min-width: 0; }
+.categoria__nombre { font-weight: 600; overflow-wrap: break-word; hyphens: auto; }
 .categoria__cant { font-size: 13px; color: var(--texto-2); }
 
 .cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 20px; }
@@ -236,6 +237,7 @@ export default {
   .hero__logo { display: block; }
   .categorias { grid-auto-columns: minmax(0, 1fr); overflow: visible; padding-bottom: 0; }
   .categoria { padding: 14px; }
+  .categoria__nombre { font-size: 15px; }
   .banda { padding: 88px 0; }
   .banda__grid { grid-template-columns: 1fr 1.3fr; align-items: center; gap: 56px; }
 }
