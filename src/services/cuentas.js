@@ -1,8 +1,10 @@
 // Cuentas de clientes: registro, inicio de sesión (con email o con Google), perfil y pedidos.
 // Las contraseñas nunca se guardan en texto: se guarda un hash PBKDF2 con una "sal" aleatoria por usuario.
-// (Sin servidor, las cuentas viven en el LocalStorage de este navegador. Con Supabase pasarían a la nube.)
+// Las cuentas que entran con Google pasan por Supabase Auth: el usuario y su perfil quedan guardados en Supabase
+// (ver services/supabaseAuth.js y supabase/usuarios.sql). Acá se guarda además una copia en este navegador.
 import { reactive } from 'vue'
 import { obtenerPedidos, pedidosLocales } from './productosService'
+import { salirDeNube, guardarPerfilNube } from './supabaseAuth'
 import { CUENTA_DUENIO } from '../config/tienda'
 import { pbkdf2, sha256, salAleatoria, igualesSeguro, leerJSON, guardarJSON, registrarFallo, limpiarFallos, segundosBloqueado, textoEspera } from './seguridad'
 
@@ -125,12 +127,13 @@ export function ingresarConGoogle (perfil) {
     if (u.google && u.google !== perfil.sub) throw new Error('Este email ya está vinculado a otra cuenta de Google.')
     u.google = perfil.sub
     if (!u.foto && perfil.foto) u.foto = perfil.foto
+    if (!u.telefono && perfil.telefono) u.telefono = perfil.telefono
   } else {
     u = {
       nombre: (perfil.nombre || mail.split('@')[0]).slice(0, 40),
       apellido: (perfil.apellido || '').slice(0, 40),
       email: mail,
-      telefono: '',
+      telefono: (perfil.telefono || '').slice(0, 20),
       dni: '',
       foto: perfil.foto || '',
       creado: new Date().toISOString(),
@@ -148,8 +151,8 @@ export function ingresarConGoogle (perfil) {
 export function cerrarSesion () {
   try { localStorage.removeItem(CLAVE_SESION) } catch (e) { /* nada */ }
   sesion.usuario = null
-  // Si Google está cargado, evita que vuelva a entrar solo con la misma cuenta.
-  if (window.google && window.google.accounts && window.google.accounts.id) window.google.accounts.id.disableAutoSelect()
+  salirDeNube() // también cierra la sesión de Supabase
+
 }
 
 export function actualizarPerfil (datos) {
@@ -164,6 +167,7 @@ export function actualizarPerfil (datos) {
   })
   guardarUsuarios(lista)
   sesion.usuario = publico(u)
+  if (u.google) guardarPerfilNube({ nombre: u.nombre, apellido: u.apellido, telefono: u.telefono }) // copia en Supabase
   return sesion.usuario
 }
 

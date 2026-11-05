@@ -274,6 +274,22 @@ export async function actualizarPedidosLocales () {
   }
 }
 
+// Pedidos del usuario logueado con Google, guardados en Supabase (se ven desde cualquier dispositivo).
+// Se suman a la copia local para que "Mis pedidos" y la página de cada pedido los encuentren.
+export async function traerMisPedidosNube () {
+  if (!nubeActiva()) return []
+  try {
+    const remotos = (await rpc('mis_pedidos')).map(pedidoDesdeFila)
+    if (!remotos.length) return []
+    const locales = pedidosLocales()
+    const lista = [...locales.map((p) => remotos.find((r) => r.numero === p.numero) || p), ...remotos.filter((r) => !locales.some((p) => p.numero === r.numero))]
+    guardarLista(CLAVE_PEDIDOS, lista)
+    return remotos
+  } catch (e) {
+    return [] // sin sesión de Supabase o sin conexión: quedan los pedidos locales
+  }
+}
+
 export function obtenerPedido (numero) {
   const n = Number(numero)
   return pedidosLocales().find((p) => p.numero === n) || leerLista(CLAVE_PEDIDOS_ADMIN).find((p) => p.numero === n) || null
