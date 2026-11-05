@@ -109,7 +109,8 @@ function pedidoDesdeFila (f) {
     cliente: f.cliente,
     entrega: f.entrega,
     pago: f.pago,
-    usuario: f.usuario
+    usuario: f.usuario,
+    comprobanteFecha: f.comprobante_fecha || null
   }
 }
 
@@ -288,6 +289,83 @@ export async function traerMisPedidosNube () {
   } catch (e) {
     return [] // sin sesión de Supabase o sin conexión: quedan los pedidos locales
   }
+}
+
+// ---------- Comprobante de pago ----------
+export const TIPOS_COMPROBANTE = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+const MAX_ORIGINAL = 5 * 1024 * 1024 // lo que se acepta elegir (las fotos se achican antes de subir)
+const MAX_SUBIDA = 1024 * 1024 // lo que se sube como máximo (1 MB)
+
+function aBase64 (blob) {
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader()
+    lector.onload = () => resolve(String(lector.result).split(',')[1] || '')
+    lector.onerror = () => reject(new Error('No se pudo leer el archivo.'))
+    lector.readAsDataURL(blob)
+  })
+}
+
+// Achica la foto (máx. 1600 px de lado, JPG) para que pese poco y suba rápido.
+function achicarFoto (archivo, lado = 1600, calidad = 0.82) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(archivo)
+    const img = new Image()
+    img.onload = () => {
+      const esc = Math.min(1, lado / Math.max(img.width, img.height))
+      const c = document.createElement('canvas')
+      c.width = Math.round(img.width * esc)
+      c.height = Math.round(img.height * esc)
+      const ctx = c.getContext('2d')
+      ctx.fillStyle = '#fff'
+      ctx.fillRect(0, 0, c.width, c.height)
+      ctx.drawImage(img, 0, 0, c.width, c.height)
+      URL.revokeObjectURL(url)
+      c.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo procesar la foto.'))), 'image/jpeg', calidad)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo abrir la foto. Probá con otra.')) }
+    img.src = url
+  })
+}
+
+// Revisa el archivo elegido. Devuelve el mensaje de error, o '' si está bien.
+export function validarComprobante (archivo) {
+  if (!archivo) return 'Elegí un archivo.'
+  if (!TIPOS_COMPROBANTE.includes(archivo.type)) return 'Formato no permitido. Subí una foto (JPG, PNG o WEBP) o un PDF.'
+  if (archivo.size > MAX_ORIGINAL) return 'El archivo pesa más de 5 MB. Probá con una foto o captura más liviana.'
+  if (archivo.type === 'application/pdf' && archivo.size > MAX_SUBIDA) return 'El PDF pesa más de 1 MB. Probá con una captura de pantalla del comprobante.'
+  return ''
+}
+
+// Sube el comprobante de un pedido hecho en este navegador (hace falta su código secreto).
+export async function adjuntarComprobante (pedido, archivo) {
+  const error = validarComprobante(archivo)
+  if (error) throw new Error(error)
+  let blob = archivo
+  let tipo = archivo.type
+  if (tipo !== 'application/pdf') {
+    blob = await achicarFoto(archivo)
+    if (blob.size > MAX_SUBIDA) blob = await achicarFoto(archivo, 1200, 0.7)
+    if (blob.size > MAX_SUBIDA) throw new Error('La foto sigue pesando demasiado. Probá con una captura de pantalla.')
+    tipo = 'image/jpeg'
+  }
+  let fecha = new Date().toISOString()
+  if (nubeActiva()) {
+    if (!pedido.token) throw new Error('Este pedido no se hizo desde este navegador: mandanos el comprobante por Instagram.')
+    const r = await rpc('adjuntar_comprobante', { p_numero: pedido.numero, p_token: pedido.token, p_tipo: tipo, p_nombre: archivo.name, p_datos: await aBase64(blob) })
+    fecha = r.fecha || fecha
+  }
+  // Sin nube (modo demo) solo se marca el pedido: el archivo no sale de este navegador.
+  actualizarCopias({ numero: pedido.numero, comprobanteFecha: fecha })
+  return fecha
+}
+
+// El panel abre el comprobante de un pedido. Devuelve { tipo, nombre, url } (url para mostrar o descargar).
+export async function verComprobante (numero) {
+  if (!nubeActiva()) throw new Error('En el modo demo los comprobantes no se guardan.')
+  const r = await rpcAdmin('admin_comprobante', { p_numero: numero })
+  if (!TIPOS_COMPROBANTE.includes(r.tipo)) throw new Error('El comprobante tiene un formato no permitido.')
+  const bytes = Uint8Array.from(atob(r.datos), (c) => c.charCodeAt(0))
+  return { tipo: r.tipo, nombre: r.nombre || `comprobante-${numero}`, url: URL.createObjectURL(new Blob([bytes], { type: r.tipo })) }
 }
 
 export function obtenerPedido (numero) {
