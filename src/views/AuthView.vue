@@ -12,7 +12,7 @@
         <form v-if="modo === 'ingresar'" key="ingresar" class="auth__form" novalidate @submit.prevent="ingresar">
           <h1>Hola de nuevo</h1>
           <p class="texto-sec">Ingresá para ver tus pedidos y comprar más rápido.</p>
-          <GoogleButton :texto="'continue_with'" @ingreso="conGoogle" @error="errorGoogle" />
+          <GoogleButton :destino="destinoGoogle" @error="errorGoogle" />
           <div class="auth__o" aria-hidden="true"><span>o con tu email</span></div>
           <div class="campo">
             <label for="a-email">Email</label>
@@ -39,7 +39,7 @@
         <form v-else key="registro" class="auth__form" novalidate @submit.prevent="crearCuenta">
           <h1>Creá tu cuenta</h1>
           <p class="texto-sec">Guardamos tus datos para la próxima compra y podés seguir tus pedidos.</p>
-          <GoogleButton :texto="'continue_with'" @ingreso="conGoogle" @error="errorGoogle" />
+          <GoogleButton :destino="destinoGoogle" @error="errorGoogle" />
           <div class="auth__o" aria-hidden="true"><span>o con tu email</span></div>
           <div class="auth__fila">
             <div class="campo">
@@ -100,6 +100,7 @@
 <script>
 import { registrar, iniciarSesion, emailRegistrado, ingresarConGoogle } from '../services/cuentas'
 import GoogleButton from '../components/GoogleButton.vue'
+import { hayRespuestaDeGoogle, recibirIngreso, destinoGuardado } from '../services/supabaseAuth'
 import { contrasenaComun } from '../services/seguridad'
 
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -119,6 +120,11 @@ export default {
     }
   },
   computed: {
+    // A dónde volver después de entrar con Google
+    destinoGoogle () {
+      const d = this.$route.query.redirect
+      return typeof d === 'string' && d.startsWith('/') && !d.startsWith('//') ? d : '/cuenta'
+    },
     modo () {
       return this.$route.name === 'registro' ? 'registro' : 'ingresar'
     },
@@ -131,6 +137,19 @@ export default {
       if (/[A-Z]/.test(c) && /[a-z]/.test(c)) n++
       if (/[^a-zA-Z0-9]/.test(c) || c.length >= 12) n++
       return { nivel: n, texto: ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Muy buena'][n] }
+    }
+  },
+  // Al volver de Google (vía Supabase) la sesión viene en la dirección: se verifica y se entra.
+  async created () {
+    if (!hayRespuestaDeGoogle()) return
+    this.cargando = true
+    try {
+      const perfil = await recibirIngreso()
+      this.conGoogle(perfil, destinoGuardado())
+    } catch (e) {
+      this.errorGeneral = e.message
+    } finally {
+      this.cargando = false
     }
   },
   watch: {
@@ -199,15 +218,15 @@ export default {
       if (!ok) this.$nextTick(() => { const el = this.$el.querySelector('[aria-invalid="true"]'); if (el) el.focus() })
       return ok
     },
-    volver () {
-      const destino = this.$route.query.redirect
+    volver (guardado = '') {
+      const destino = guardado || this.$route.query.redirect
       this.$router.replace(typeof destino === 'string' && destino.startsWith('/') && !destino.startsWith('//') ? destino : { name: 'cuenta' })
     },
-    conGoogle (perfil) {
+    conGoogle (perfil, destino = '') {
       try {
         const { usuario, nuevo } = ingresarConGoogle(perfil)
         this.$emit('notificar', { mensaje: nuevo ? `¡Bienvenido/a, ${usuario.nombre}! Completá tu teléfono en Mi cuenta para comprar más rápido.` : `¡Hola, ${usuario.nombre}!` })
-        this.volver()
+        this.volver(destino)
       } catch (e) {
         this.errorGeneral = e.message
       }

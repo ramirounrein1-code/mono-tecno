@@ -72,7 +72,7 @@
 
 <script>
 import { sesion, cerrarSesion, actualizarPerfil, pedidosDelUsuario, esDuenio } from '../services/cuentas'
-import { actualizarPedidosLocales } from '../services/productosService'
+import { actualizarPedidosLocales, traerMisPedidosNube } from '../services/productosService'
 import { formatearPesos } from '../services/dolarService'
 
 export default {
@@ -101,6 +101,8 @@ export default {
     this.pedidos = pedidosDelUsuario()
     // Trae de la nube el estado al día de esos pedidos (pagado, enviado...).
     await actualizarPedidosLocales()
+    // Si entró con Google, también trae de Supabase los pedidos hechos desde otros dispositivos.
+    await traerMisPedidosNube()
     this.pedidos = pedidosDelUsuario()
   },
   methods: {
